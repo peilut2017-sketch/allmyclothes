@@ -10,7 +10,7 @@ import {
 import { supabase, STORAGE_BUCKET } from '../lib/supabase';
 import { DEFAULT_CATEGORIES, DEFAULT_ITEM_TYPES } from '../lib/constants';
 import { compressImage } from '../lib/image';
-import type { Category, Child, Item, ItemInput, ItemType } from '../lib/types';
+import type { Category, Child, HouseholdMember, Item, ItemInput, ItemType } from '../lib/types';
 import { useAuth } from './AuthContext';
 
 interface DataContextValue {
@@ -21,6 +21,10 @@ interface DataContextValue {
   itemTypes: ItemType[];
   items: Item[];
   imageUrls: Record<string, string>;
+  inviteCode: string | null;
+  members: HouseholdMember[];
+  joinHousehold: (code: string) => Promise<boolean>;
+  leaveHousehold: () => Promise<void>;
   reload: () => Promise<void>;
   addChild: (child: Omit<Child, 'id'>) => Promise<void>;
   updateChild: (id: string, child: Partial<Omit<Child, 'id'>>) => Promise<void>;
@@ -50,6 +54,9 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [householdId, setHouseholdId] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
 
   const resolveImageUrls = useCallback(async (paths: string[]) => {
     const unique = [...new Set(paths.filter(Boolean))];
@@ -87,12 +94,24 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     if (!userId) return;
     setError(null);
-    const [childRes, catRes, typeRes, itemRes] = await Promise.all([
+    // ודא שקיים משק בית (חשוב לפני כל שאילתה – חוקי הגישה תלויים בו)
+    const { data: hid, error: hidError } = await supabase.rpc('ensure_membership');
+    if (hidError) {
+      setError(hidError.message);
+      setLoading(false);
+      return;
+    }
+    setHouseholdId(hid as string);
+    const [childRes, catRes, typeRes, itemRes, houseRes, memberRes] = await Promise.all([
       supabase.from('children').select('*').order('birth_date', { ascending: true }),
       supabase.from('categories').select('*').order('created_at', { ascending: true }),
       supabase.from('item_types').select('*').order('name', { ascending: true }),
       supabase.from('items').select('*').order('created_at', { ascending: false }),
+      supabase.from('households').select('invite_code').single(),
+      supabase.from('profiles').select('id, email').eq('household_id', hid as string),
     ]);
+    setInviteCode(houseRes.data?.invite_code ?? null);
+    setMembers((memberRes.data ?? []) as HouseholdMember[]);
     const firstError = childRes.error ?? catRes.error ?? typeRes.error ?? itemRes.error;
     if (firstError) {
       setError(firstError.message);
@@ -109,10 +128,10 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
     setChildList((childRes.data ?? []) as Child[]);
     setCategories(cats);
     setItemTypes(types);
-    const loadedItems = (itemRes.data ?? []) as Item[];
+    const loadedItems = ((itemRes.data ?? []) as Item[]).map((i) => ({ ...i, images: i.images ?? [] }));
     setItems(loadedItems);
     setLoading(false);
-    void resolveImageUrls(loadedItems.map((i) => i.image_path ?? ''));
+    void resolveImageUrls(loadedItems.flatMap((i) => i.images));
   }, [userId, seedDefaults, resolveImageUrls]);
 
   useEffect(() => {
@@ -125,8 +144,41 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       setItemTypes([]);
       setItems([]);
       setImageUrls({});
+      setHouseholdId(null);
+      setInviteCode(null);
+      setMembers([]);
     }
   }, [userId, reload]);
+
+  // רענון בחזרה לאפליקציה – שומר על סנכרון בין שני הורים שמעדכנים במקביל
+  useEffect(() => {
+    if (!userId) return;
+    let last = Date.now();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - last > 30_000) {
+        last = Date.now();
+        void reload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [userId, reload]);
+
+  const joinHousehold = useCallback(
+    async (code: string) => {
+      const { data, error: err } = await supabase.rpc('join_household', { code });
+      if (err) throw new Error(err.message);
+      if (data === true) await reload();
+      return data === true;
+    },
+    [reload],
+  );
+
+  const leaveHousehold = useCallback(async () => {
+    const { error: err } = await supabase.rpc('leave_household');
+    if (err) throw new Error(err.message);
+    await reload();
+  }, [reload]);
 
   const addChild = useCallback(
     async (child: Omit<Child, 'id'>) => {
@@ -243,8 +295,8 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       const { error: err } = await supabase.from('items').delete().eq('id', id);
       if (err) throw new Error(err.message);
       setItems((prev) => prev.filter((i) => i.id !== id));
-      if (item?.image_path) {
-        void supabase.storage.from(STORAGE_BUCKET).remove([item.image_path]);
+      if (item && item.images.length > 0) {
+        void supabase.storage.from(STORAGE_BUCKET).remove(item.images);
       }
     },
     [items],
@@ -254,7 +306,7 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
     async (file: File) => {
       if (!userId) return null;
       const blob = await compressImage(file);
-      const path = `${userId}/${crypto.randomUUID()}.jpg`;
+      const path = `${householdId ?? userId}/${crypto.randomUUID()}.jpg`;
       const { error: err } = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(path, blob, { contentType: 'image/jpeg' });
@@ -262,7 +314,7 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       await resolveImageUrls([path]);
       return path;
     },
-    [userId, resolveImageUrls],
+    [userId, householdId, resolveImageUrls],
   );
 
   const value = useMemo<DataContextValue>(
@@ -274,6 +326,10 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       itemTypes,
       items,
       imageUrls,
+      inviteCode,
+      members,
+      joinHousehold,
+      leaveHousehold,
       reload,
       addChild,
       updateChild,
@@ -291,6 +347,7 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
     }),
     [
       loading, error, childList, categories, itemTypes, items, imageUrls, reload,
+      inviteCode, members, joinHousehold, leaveHousehold,
       addChild, updateChild, deleteChild, addCategory, renameCategory, deleteCategory,
       addItemType, renameItemType, deleteItemType, addItem, updateItem, deleteItem, uploadImage,
     ],

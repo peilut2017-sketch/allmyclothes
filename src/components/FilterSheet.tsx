@@ -60,7 +60,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       className={`rounded-full border px-3 py-1.5 text-sm font-medium transition active:scale-95 ${
         active
           ? 'border-amber-500 bg-amber-500 text-white'
-          : 'border-gray-200 bg-white text-gray-600'
+          : 'border-gray-200 bg-card text-gray-600'
       }`}
     >
       {children}

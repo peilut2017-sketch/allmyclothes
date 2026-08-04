@@ -9,6 +9,7 @@ import { ItemFormPage } from './pages/ItemFormPage';
 import { ItemDetailPage } from './pages/ItemDetailPage';
 import { ChildrenPage } from './pages/ChildrenPage';
 import { ShoppingPage } from './pages/ShoppingPage';
+import { SeasonSwapPage } from './pages/SeasonSwapPage';
 import { StatsPage } from './pages/StatsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -39,7 +40,7 @@ function Shell() {
 
   if (!session) return <LoginPage />;
 
-  const hideNav = ['/add', '/edit'].some((p) => location.pathname.startsWith(p));
+  const hideNav = ['/add', '/edit', '/season-swap'].some((p) => location.pathname.startsWith(p));
 
   return (
     <DataProvider>
@@ -50,6 +51,7 @@ function Shell() {
         <Route path="/item/:id" element={<ItemDetailPage />} />
         <Route path="/children" element={<ChildrenPage />} />
         <Route path="/shopping" element={<ShoppingPage />} />
+        <Route path="/season-swap" element={<SeasonSwapPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

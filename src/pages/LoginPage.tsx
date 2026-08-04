@@ -55,7 +55,7 @@ export function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-5 flex rounded-2xl bg-white p-1 shadow-card">
+        <div className="mb-5 flex rounded-2xl bg-card p-1 shadow-card">
           {(['signin', 'signup'] as Mode[]).map((m) => (
             <button
               key={m}
@@ -76,7 +76,7 @@ export function LoginPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="שם המשפחה (למשל: משפחת לוי)"
-              className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-ink outline-none focus:border-amber-400"
+              className="w-full rounded-2xl border border-gray-200 bg-card px-4 py-3.5 text-ink outline-none focus:border-amber-400"
             />
           )}
           <input
@@ -86,7 +86,7 @@ export function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="אימייל"
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-left text-ink outline-none focus:border-amber-400"
+            className="w-full rounded-2xl border border-gray-200 bg-card px-4 py-3.5 text-left text-ink outline-none focus:border-amber-400"
           />
           <input
             type="password"
@@ -96,11 +96,11 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="סיסמה (לפחות 6 תווים)"
             minLength={6}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-left text-ink outline-none focus:border-amber-400"
+            className="w-full rounded-2xl border border-gray-200 bg-card px-4 py-3.5 text-left text-ink outline-none focus:border-amber-400"
           />
 
-          {error && <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-          {info && <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{info}</p>}
+          {error && <p className="rounded-xl bg-rose-50 dark:bg-rose-500/15 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
+          {info && <p className="rounded-xl bg-emerald-50 dark:bg-emerald-500/15 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">{info}</p>}
 
           <button
             type="submit"

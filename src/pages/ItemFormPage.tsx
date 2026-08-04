@@ -12,7 +12,11 @@ export function ItemFormPage() {
   const { items, children, categories, itemTypes, addItem, updateItem, addCategory, addItemType } = useData();
 
   const editing = id ? items.find((i) => i.id === id) : undefined;
-  const navState = location.state as { duplicateOf?: string; shopping?: boolean } | null;
+  const navState = location.state as {
+    duplicateOf?: string;
+    shopping?: boolean;
+    prefill?: Partial<ItemInput>;
+  } | null;
   const duplicateOf = navState?.duplicateOf;
   const fromShopping = navState?.shopping === true;
   const source = editing ?? (duplicateOf ? items.find((i) => i.id === duplicateOf) : undefined);
@@ -23,7 +27,7 @@ export function ItemFormPage() {
     child_id: source?.child_id ?? null,
     category_id: source?.category_id ?? null,
     type_id: source?.type_id ?? null,
-    // בשכפול לא מעתיקים מידה ותמונה – בדרך כלל קונים אותו פריט במידה אחרת
+    // בשכפול לא מעתיקים מידה ותמונות – בדרך כלל קונים אותו פריט במידה אחרת
     size_label: duplicateOf ? null : (source?.size_label ?? null),
     season: source?.season ?? 'all',
     store: source?.store ?? null,
@@ -32,7 +36,8 @@ export function ItemFormPage() {
     year: source?.year ?? new Date().getFullYear(),
     quantity: source?.quantity ?? 1,
     status: source?.status ?? (fromShopping ? 'to_buy' : 'active'),
-    image_path: duplicateOf ? null : (source?.image_path ?? null),
+    images: duplicateOf ? [] : (source?.images ?? []),
+    ...navState?.prefill,
   }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +97,7 @@ export function ItemFormPage() {
       </header>
 
       <form onSubmit={(e) => void submit(e)} className="mx-auto max-w-lg space-y-5 px-4">
-        <ImagePicker imagePath={form.image_path} onChange={(p) => set('image_path', p)} />
+        <ImagePicker images={form.images} onChange={(imgs) => set('images', imgs)} />
 
         <Field label="שם הפריט *">
           <input
@@ -243,7 +248,7 @@ export function ItemFormPage() {
               <button
                 type="button"
                 onClick={() => set('quantity', Math.max(1, form.quantity - 1))}
-                className="h-11 w-11 rounded-2xl bg-white text-xl font-bold text-gray-500 shadow-card active:scale-95"
+                className="h-11 w-11 rounded-2xl bg-card text-xl font-bold text-gray-500 shadow-card active:scale-95"
               >
                 −
               </button>
@@ -251,7 +256,7 @@ export function ItemFormPage() {
               <button
                 type="button"
                 onClick={() => set('quantity', form.quantity + 1)}
-                className="h-11 w-11 rounded-2xl bg-white text-xl font-bold text-gray-500 shadow-card active:scale-95"
+                className="h-11 w-11 rounded-2xl bg-card text-xl font-bold text-gray-500 shadow-card active:scale-95"
               >
                 +
               </button>
@@ -282,7 +287,7 @@ export function ItemFormPage() {
           />
         </Field>
 
-        {error && <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+        {error && <p className="rounded-xl bg-rose-50 dark:bg-rose-500/15 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
 
         <div className="fixed inset-x-0 bottom-0 z-40 bg-gradient-to-t from-cream via-cream to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6">
           <div className="mx-auto max-w-lg">
@@ -331,7 +336,7 @@ function SelectChip({ active, activeColor, onClick, children }: {
       type="button"
       onClick={onClick}
       className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition active:scale-95 ${
-        active ? 'border-transparent text-white' : 'border-gray-200 bg-white text-gray-600'
+        active ? 'border-transparent text-white' : 'border-gray-200 bg-card text-gray-600'
       }`}
       style={active ? { backgroundColor: activeColor ?? '#2d2a26' } : undefined}
     >
@@ -347,7 +352,7 @@ function SeasonButton({ season, active, onClick }: { season: Season; active: boo
       type="button"
       onClick={onClick}
       className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-2.5 text-xs font-semibold transition active:scale-95 ${
-        active ? 'border-amber-500 bg-amber-50 text-amber-800' : 'border-gray-100 bg-white text-gray-500'
+        active ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' : 'border-gray-100 bg-card text-gray-500'
       }`}
     >
       <span className="text-xl">{s.emoji}</span>

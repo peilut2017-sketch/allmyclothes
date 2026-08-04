@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog, Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { CHILD_COLORS, CHILD_EMOJIS, SEASONS } from '../lib/constants';
 import { childAge } from '../lib/format';
+import { outgrowStatus } from '../lib/sizes';
 import type { Child } from '../lib/types';
 
 interface ChildForm {
@@ -17,13 +18,28 @@ interface ChildForm {
 const emptyForm: ChildForm = { name: '', birth_date: '', color: CHILD_COLORS[0], emoji: CHILD_EMOJIS[1] };
 
 export function ChildrenPage() {
-  const { children, items, addChild, updateChild, deleteChild } = useData();
+  const { children, items, addChild, updateChild, deleteChild, updateItem } = useData();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Child | null>(null);
   const [form, setForm] = useState<ChildForm>(emptyForm);
   const [deleting, setDeleting] = useState<Child | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+
+  // בגדים שהילד כנראה עומד לצאת מהם – לפי גיל מול מידה
+  const outgrowAlerts = useMemo(
+    () =>
+      items
+        .map((item) => {
+          const child = children.find((c) => c.id === item.child_id);
+          return { item, child, level: outgrowStatus(item, child) };
+        })
+        .filter((a) => a.level !== null && !dismissed.includes(a.item.id))
+        .sort((a) => (a.level === 'past' ? -1 : 1))
+        .slice(0, 6),
+    [items, children, dismissed],
+  );
 
   const openAdd = () => {
     setEditing(null);
@@ -75,6 +91,39 @@ export function ChildrenPage() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-3 px-4 pt-2">
+        {outgrowAlerts.length > 0 && (
+          <section className="rounded-2xl border border-rose-100 bg-rose-50 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
+            <h2 className="mb-1 text-sm font-bold text-rose-700 dark:text-rose-300">⏰ שווה לבדוק – אולי כבר קטנים</h2>
+            <p className="mb-3 text-xs text-rose-600/80 dark:text-rose-300/80">לפי גיל הילד מול המידה שרשומה על הבגד</p>
+            <div className="space-y-2">
+              {outgrowAlerts.map(({ item, child, level }) => (
+                <div key={item.id} className="flex items-center gap-2 rounded-xl bg-card p-2.5 shadow-sm">
+                  <Link to={`/item/${item.id}`} className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-ink">{item.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {child?.emoji} {child?.name} · מידה {item.size_label}
+                      {level === 'past' ? ' · כנראה כבר קטן' : ' · בקרוב קטן'}
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => void updateItem(item.id, { status: 'outgrown' })}
+                    className="shrink-0 rounded-xl bg-rose-100 px-2.5 py-1.5 text-xs font-bold text-rose-700 active:scale-95 dark:bg-rose-500/20 dark:text-rose-300"
+                  >
+                    📏 קטן
+                  </button>
+                  <button
+                    onClick={() => setDismissed((d) => [...d, item.id])}
+                    aria-label="הסתרה"
+                    className="shrink-0 px-1 text-sm text-gray-400"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {children.length === 0 && (
           <EmptyState
             emoji="👶"
@@ -95,7 +144,7 @@ export function ChildrenPage() {
           }));
 
           return (
-            <div key={child.id} className="overflow-hidden rounded-2xl bg-white shadow-card">
+            <div key={child.id} className="overflow-hidden rounded-2xl bg-card shadow-card">
               <div className="h-1.5" style={{ backgroundColor: child.color }} />
               <div className="p-4">
                 <div className="flex items-center gap-3">
@@ -118,11 +167,11 @@ export function ChildrenPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                  <span className="rounded-full bg-emerald-50 dark:bg-emerald-500/15 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">
                     ✅ {activeCount} בארון
                   </span>
                   {waitingCount > 0 && (
-                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">
+                    <span className="rounded-full bg-blue-50 dark:bg-blue-500/15 px-2.5 py-1 text-blue-700 dark:text-blue-300">
                       📦 {waitingCount} שמורים לגדילה
                     </span>
                   )}
@@ -206,7 +255,7 @@ export function ChildrenPage() {
                 setModalOpen(false);
                 setDeleting(editing);
               }}
-              className="w-full py-1 text-sm font-semibold text-rose-500"
+              className="w-full py-1 text-sm font-semibold text-rose-500 dark:text-rose-400"
             >
               מחיקת {editing.name} מהרשימה
             </button>
@@ -226,9 +275,12 @@ export function ChildrenPage() {
       />
 
       {children.length > 0 && (
-        <div className="mx-auto max-w-lg px-4 pt-4 text-center">
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-2 px-4 pt-4 text-center">
           <button onClick={() => navigate('/add')} className="text-sm font-semibold text-amber-600">
             + הוספת בגד חדש לארון
+          </button>
+          <button onClick={() => navigate('/season-swap')} className="text-sm font-semibold text-amber-600">
+            🔄 החלפת עונה – מעבר מודרך על הארון
           </button>
         </div>
       )}

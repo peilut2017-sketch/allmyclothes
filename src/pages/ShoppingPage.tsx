@@ -4,7 +4,13 @@ import { useData } from '../context/DataContext';
 import { EmptyState } from '../components/EmptyState';
 import { SEASONS } from '../lib/constants';
 import { formatPrice } from '../lib/format';
-import type { Item } from '../lib/types';
+import type { Item, Season } from '../lib/types';
+
+// סוגי פריטים בסיסיים שנבדקים במסך החוסרים, לפי עונה
+const CORE_TYPES: Record<'winter' | 'summer', string[]> = {
+  winter: ['מעיל', 'סוודר', "קפוצ'ון", 'מכנסיים', "פיג'מה", 'מגפיים'],
+  summer: ['חולצה', 'מכנסיים', 'סנדלים', 'בגד ים', 'כובע'],
+};
 
 export function ShoppingPage() {
   const { items, children, itemTypes, updateItem } = useData();
@@ -23,6 +29,49 @@ export function ShoppingPage() {
       return ai - bi;
     });
   }, [list, children]);
+
+  // חוסרים: לכל ילד, סוגי פריטים בסיסיים שאין לו בכלל לעונה הקרובה
+  const [dismissedGaps, setDismissedGaps] = useState<string[]>([]);
+  const focusSeason: Season = useMemo(() => {
+    const m = new Date().getMonth();
+    return m >= 8 || m <= 1 ? 'winter' : 'summer';
+  }, []);
+  const gaps = useMemo(() => {
+    const coreNames = CORE_TYPES[focusSeason as 'winter' | 'summer'];
+    const relevantTypes = itemTypes.filter((t) => coreNames.includes(t.name));
+    const result: { key: string; childId: string; childName: string; emoji: string; color: string; typeId: string; typeName: string }[] = [];
+    for (const child of children) {
+      for (const type of relevantTypes) {
+        const has = items.some(
+          (i) =>
+            i.child_id === child.id &&
+            i.type_id === type.id &&
+            (i.status === 'active' || i.status === 'waiting' || i.status === 'to_buy') &&
+            (i.season === focusSeason || i.season === 'all'),
+        );
+        const key = `${child.id}:${type.id}`;
+        if (!has && !dismissedGaps.includes(key)) {
+          result.push({ key, childId: child.id, childName: child.name, emoji: child.emoji, color: child.color, typeId: type.id, typeName: type.name });
+        }
+      }
+    }
+    return result.slice(0, 8);
+  }, [children, items, itemTypes, focusSeason, dismissedGaps]);
+
+  const addGapToList = (gap: (typeof gaps)[number]) => {
+    navigate('/add', {
+      state: {
+        shopping: true,
+        prefill: {
+          name: `${gap.typeName} ל${SEASONS[focusSeason].label}`,
+          child_id: gap.childId,
+          type_id: gap.typeId,
+          season: focusSeason,
+          status: 'to_buy',
+        },
+      },
+    });
+  };
 
   const markBought = async (item: Item) => {
     setJustBought(item.id);
@@ -61,7 +110,7 @@ export function ShoppingPage() {
               {list.length > 0 && (
                 <button
                   onClick={shareList}
-                  className="rounded-2xl bg-white px-3.5 py-2 text-sm font-bold text-ink shadow-card active:scale-95"
+                  className="rounded-2xl bg-card px-3.5 py-2 text-sm font-bold text-ink shadow-card active:scale-95"
                 >
                   📤 שיתוף
                 </button>
@@ -99,14 +148,14 @@ export function ShoppingPage() {
             return (
               <div
                 key={item.id}
-                className={`flex items-center gap-3 rounded-2xl bg-white p-3 shadow-card transition ${
+                className={`flex items-center gap-3 rounded-2xl bg-card p-3 shadow-card transition ${
                   justBought === item.id ? 'scale-95 opacity-0' : ''
                 }`}
               >
                 <button
                   onClick={() => void markBought(item)}
                   aria-label={`נקנה: ${item.name}`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-emerald-300 bg-emerald-50 font-bold text-emerald-500 transition active:scale-90"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 font-bold text-emerald-500 transition active:scale-90"
                 >
                   ✓
                 </button>
@@ -139,6 +188,39 @@ export function ShoppingPage() {
           <p className="pt-3 text-center text-xs text-gray-400">
             לחיצה על ✓ מעבירה את הפריט לארון · לחיצה על השם פותחת לעריכה
           </p>
+        )}
+
+        {gaps.length > 0 && (
+          <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
+            <h2 className="mb-1 text-sm font-bold text-amber-800 dark:text-amber-200">
+              💡 אולי חסר ל{SEASONS[focusSeason].label}?
+            </h2>
+            <p className="mb-3 text-xs text-amber-700/80 dark:text-amber-300/80">
+              פריטים בסיסיים שלא מצאנו בארון · לחיצה על + מוסיפה לרשימה
+            </p>
+            <div className="space-y-2">
+              {gaps.map((gap) => (
+                <div key={gap.key} className="flex items-center gap-2 rounded-xl bg-card p-2.5 shadow-sm">
+                  <span className="min-w-0 flex-1 text-sm text-ink">
+                    אין ל<b>{gap.childName}</b> {gap.emoji} — <b>{gap.typeName}</b>
+                  </span>
+                  <button
+                    onClick={() => addGapToList(gap)}
+                    className="shrink-0 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-white active:scale-95"
+                  >
+                    + לרשימה
+                  </button>
+                  <button
+                    onClick={() => setDismissedGaps((d) => [...d, gap.key])}
+                    aria-label="הסתרה"
+                    className="shrink-0 px-1 text-sm text-gray-400"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
       </main>
     </div>

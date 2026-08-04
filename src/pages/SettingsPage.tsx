@@ -4,6 +4,13 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog } from '../components/Modal';
 import { SEASONS, STATUSES } from '../lib/constants';
+import { getTheme, setTheme as persistTheme, type Theme } from '../lib/theme';
+
+const THEME_OPTIONS: { value: Theme; label: string; emoji: string }[] = [
+  { value: 'light', label: 'בהיר', emoji: '☀️' },
+  { value: 'dark', label: 'כהה', emoji: '🌙' },
+  { value: 'system', label: 'אוטומטי', emoji: '📱' },
+];
 
 export function SettingsPage() {
   const { session, signOut } = useAuth();
@@ -11,9 +18,46 @@ export function SettingsPage() {
     items, children, categories, itemTypes,
     addCategory, renameCategory, deleteCategory,
     addItemType, renameItemType, deleteItemType,
+    inviteCode, members, joinHousehold, leaveHousehold,
   } = useData();
   const [confirm, setConfirm] = useState<{ kind: 'category' | 'type'; id: string; name: string } | null>(null);
   const navigate = useNavigate();
+  const [theme, setThemeState] = useState<Theme>(getTheme);
+  const [joinCode, setJoinCode] = useState('');
+  const [joinMsg, setJoinMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [joinBusy, setJoinBusy] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+
+  const changeTheme = (t: Theme) => {
+    setThemeState(t);
+    persistTheme(t);
+  };
+
+  const doJoin = async () => {
+    if (!joinCode.trim()) return;
+    setJoinBusy(true);
+    setJoinMsg(null);
+    try {
+      const ok = await joinHousehold(joinCode.trim());
+      setJoinMsg(
+        ok
+          ? { ok: true, text: 'הצטרפתם! עכשיו אתם רואים את אותו ארון 🎉' }
+          : { ok: false, text: 'קוד לא מוכר – בדקו שהעתקתם נכון' },
+      );
+      if (ok) setJoinCode('');
+    } catch {
+      setJoinMsg({ ok: false, text: 'משהו השתבש, נסו שוב' });
+    } finally {
+      setJoinBusy(false);
+    }
+  };
+
+  const shareInvite = () => {
+    if (!inviteCode) return;
+    const text = `היי! מצטרפים לארון המשפחה שלנו 👕\nבאפליקציה: הגדרות ← ארון משותף ← מזינים את הקוד: ${inviteCode}`;
+    if (navigator.share) void navigator.share({ text }).catch(() => {});
+    else void navigator.clipboard.writeText(text);
+  };
 
   const exportCsv = () => {
     const header = ['שם', 'תיאור', 'ילד/ה', 'מידה', 'עונה', 'קטגוריה', 'סוג', 'חנות/יצרן', 'מיקום', 'מחיר', 'שנה', 'כמות', 'סטטוס'];
@@ -48,6 +92,95 @@ export function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">
+        <section className="rounded-2xl bg-card p-4 shadow-card">
+          <h2 className="mb-1 text-sm font-bold text-gray-600">מראה</h2>
+          <p className="mb-3 text-xs text-gray-400">בהיר, כהה, או לפי הגדרת המכשיר</p>
+          <div className="grid grid-cols-3 gap-2">
+            {THEME_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => changeTheme(opt.value)}
+                className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-2.5 text-xs font-semibold transition active:scale-95 ${
+                  theme === opt.value
+                    ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200'
+                    : 'border-gray-100 bg-card text-gray-500'
+                }`}
+              >
+                <span className="text-xl">{opt.emoji}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-card p-4 shadow-card">
+          <h2 className="mb-1 text-sm font-bold text-gray-600">ארון משותף 👨‍👩‍👧‍👦</h2>
+          <p className="mb-3 text-xs text-gray-400">
+            שני הורים, ארון אחד: שתפו את הקוד, ובן/בת הזוג מזינים אותו כאן מהחשבון שלהם
+          </p>
+
+          {members.length > 1 && (
+            <div className="mb-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              מחוברים לארון הזה:
+              <ul className="mt-1 space-y-0.5">
+                {members.map((m) => (
+                  <li key={m.id} dir="ltr" className="text-end font-medium">
+                    {m.email ?? 'משתמש'} {m.id === session?.user.id && '(אני)'}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {inviteCode && (
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex-1 rounded-xl bg-gray-100 px-4 py-2.5 text-center font-mono text-lg font-bold tracking-widest text-ink" dir="ltr">
+                {inviteCode}
+              </div>
+              <button
+                onClick={shareInvite}
+                className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white active:scale-95"
+              >
+                📤 שיתוף
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="קוד שקיבלתם מבן/בת הזוג"
+              dir="ltr"
+              className="input flex-1 text-center font-mono"
+            />
+            <button
+              onClick={() => void doJoin()}
+              disabled={joinBusy || !joinCode.trim()}
+              className="rounded-2xl bg-gray-100 px-4 font-bold text-ink active:scale-95 disabled:opacity-40"
+            >
+              {joinBusy ? '...' : 'הצטרפות'}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-gray-400">
+            שימו לב: הצטרפות לארון של מישהו אחר מסתירה את הנתונים שהזנתם בחשבון הנוכחי
+          </p>
+          {joinMsg && (
+            <p className={`mt-2 rounded-xl px-3 py-2 text-sm ${joinMsg.ok ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'}`}>
+              {joinMsg.text}
+            </p>
+          )}
+          {members.length > 1 && (
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="mt-2 text-xs font-semibold text-rose-500 dark:text-rose-400"
+            >
+              עזיבת הארון המשותף
+            </button>
+          )}
+        </section>
+
         <NameListCard
           title="קטגוריות"
           hint="שבת, חול, פיג'מות... איך שנוח לכם לחלק את הארון"
@@ -66,7 +199,7 @@ export function SettingsPage() {
           onDelete={(id, name) => setConfirm({ kind: 'type', id, name })}
         />
 
-        <section className="rounded-2xl bg-white p-4 shadow-card">
+        <section className="rounded-2xl bg-card p-4 shadow-card">
           <h2 className="mb-1 text-sm font-bold text-gray-600">גיבוי</h2>
           <p className="mb-3 text-xs text-gray-400">הורדת כל הפריטים כקובץ אקסל (CSV)</p>
           <button
@@ -78,12 +211,12 @@ export function SettingsPage() {
           </button>
         </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-card">
+        <section className="rounded-2xl bg-card p-4 shadow-card">
           <h2 className="mb-1 text-sm font-bold text-gray-600">החשבון שלי</h2>
           <p className="mb-3 text-sm text-gray-500" dir="ltr">{session?.user.email}</p>
           <button
             onClick={() => void signOut()}
-            className="w-full rounded-2xl bg-rose-50 py-3 font-semibold text-rose-600 active:scale-[0.98]"
+            className="w-full rounded-2xl bg-rose-50 dark:bg-rose-500/15 py-3 font-semibold text-rose-600 dark:text-rose-300 active:scale-[0.98]"
           >
             התנתקות
           </button>
@@ -91,6 +224,18 @@ export function SettingsPage() {
 
         <p className="pb-2 text-center text-xs text-gray-300">ארון המשפחה · הבגדים של כולם, במקום אחד 👕</p>
       </main>
+
+      <ConfirmDialog
+        open={confirmLeave}
+        title="עזיבת הארון המשותף"
+        message="תחזרו לארון ריק משלכם. הנתונים המשותפים יישארו אצל בן/בת הזוג. להמשיך?"
+        confirmLabel="עזיבה"
+        onConfirm={() => {
+          setConfirmLeave(false);
+          void leaveHousehold();
+        }}
+        onCancel={() => setConfirmLeave(false)}
+      />
 
       <ConfirmDialog
         open={confirm !== null}
@@ -126,7 +271,7 @@ function NameListCard({ title, hint, entries, onAdd, onRename, onDelete }: {
   };
 
   return (
-    <section className="rounded-2xl bg-white p-4 shadow-card">
+    <section className="rounded-2xl bg-card p-4 shadow-card">
       <h2 className="mb-1 text-sm font-bold text-gray-600">{title}</h2>
       <p className="mb-3 text-xs text-gray-400">{hint}</p>
       <div className="mb-3 flex flex-wrap gap-2">

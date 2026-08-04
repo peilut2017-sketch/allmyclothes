@@ -13,6 +13,7 @@ export function ItemDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const item = items.find((i) => i.id === id);
   if (!item) {
@@ -27,7 +28,7 @@ export function ItemDetailPage() {
   const child = children.find((c) => c.id === item.child_id);
   const category = categories.find((c) => c.id === item.category_id);
   const type = itemTypes.find((t) => t.id === item.type_id);
-  const imageUrl = item.image_path ? imageUrls[item.image_path] : null;
+  const galleryUrls = item.images.map((p) => imageUrls[p]).filter((u): u is string => Boolean(u));
 
   const details: [string, string][] = [
     ['שיוך', child ? `${child.emoji} ${child.name}` : '🏠 כללי'],
@@ -45,21 +46,23 @@ export function ItemDetailPage() {
   return (
     <div className="min-h-dvh bg-cream pb-28">
       <div className="relative">
-        {imageUrl ? (
-          <img src={imageUrl} alt={item.name} className="aspect-square w-full object-cover sm:mx-auto sm:max-w-lg sm:rounded-b-3xl" />
+        {galleryUrls.length > 1 ? (
+          <Gallery urls={galleryUrls} alt={item.name} index={galleryIndex} onIndexChange={setGalleryIndex} />
+        ) : galleryUrls.length === 1 ? (
+          <img src={galleryUrls[0]} alt={item.name} className="aspect-square w-full object-cover sm:mx-auto sm:max-w-lg sm:rounded-b-3xl" />
         ) : (
-          <div className="flex aspect-square w-full items-center justify-center bg-amber-50 text-8xl sm:mx-auto sm:max-w-lg">👕</div>
+          <div className="flex aspect-square w-full items-center justify-center bg-amber-50 dark:bg-amber-500/15 text-8xl sm:mx-auto sm:max-w-lg">👕</div>
         )}
         <button
           onClick={() => navigate(-1)}
           aria-label="חזרה"
-          className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-xl shadow"
+          className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/90 text-xl shadow"
         >
           →
         </button>
         <button
           onClick={() => navigate(`/edit/${item.id}`)}
-          className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 rounded-full bg-white/90 px-4 py-2 text-sm font-bold shadow"
+          className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 rounded-full bg-card/90 px-4 py-2 text-sm font-bold shadow"
         >
           ✏️ עריכה
         </button>
@@ -75,7 +78,7 @@ export function ItemDetailPage() {
         <h1 className="text-2xl font-extrabold text-ink">{item.name}</h1>
         {item.description && <p className="mt-1 text-gray-600">{item.description}</p>}
 
-        <dl className="mt-4 divide-y divide-gray-100 rounded-2xl bg-white px-4 shadow-card">
+        <dl className="mt-4 divide-y divide-gray-100 rounded-2xl bg-card px-4 shadow-card">
           {details.map(([label, value]) => (
             <div key={label} className="flex items-center justify-between py-3 text-sm">
               <dt className="text-gray-500">{label}</dt>
@@ -117,7 +120,7 @@ export function ItemDetailPage() {
                 setStatusOpen(false);
               }}
               className={`flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3.5 font-semibold transition active:scale-[0.98] ${
-                item.status === s ? 'border-amber-500 bg-amber-50 text-amber-800' : 'border-gray-100 bg-white text-gray-600'
+                item.status === s ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-200' : 'border-gray-100 bg-card text-gray-600'
               }`}
             >
               <span className="text-xl">{STATUSES[s].emoji}</span>
@@ -141,7 +144,7 @@ export function ItemDetailPage() {
                   void updateItem(item.id, { child_id: c.id, status: 'active' });
                   setTransferOpen(false);
                 }}
-                className="flex w-full items-center gap-3 rounded-2xl border-2 border-gray-100 bg-white px-4 py-3.5 font-semibold text-gray-700 transition active:scale-[0.98]"
+                className="flex w-full items-center gap-3 rounded-2xl border-2 border-gray-100 bg-card px-4 py-3.5 font-semibold text-gray-700 transition active:scale-[0.98]"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full text-lg" style={{ backgroundColor: `${c.color}22` }}>
                   {c.emoji}
@@ -155,7 +158,7 @@ export function ItemDetailPage() {
                 void updateItem(item.id, { child_id: null });
                 setTransferOpen(false);
               }}
-              className="flex w-full items-center gap-3 rounded-2xl border-2 border-gray-100 bg-white px-4 py-3.5 font-semibold text-gray-700 transition active:scale-[0.98]"
+              className="flex w-full items-center gap-3 rounded-2xl border-2 border-gray-100 bg-card px-4 py-3.5 font-semibold text-gray-700 transition active:scale-[0.98]"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-lg">🏠</span>
               ללא שיוך (כללי)
@@ -177,6 +180,45 @@ export function ItemDetailPage() {
   );
 }
 
+function Gallery({ urls, alt, index, onIndexChange }: {
+  urls: string[];
+  alt: string;
+  index: number;
+  onIndexChange: (i: number) => void;
+}) {
+  return (
+    <div className="sm:mx-auto sm:max-w-lg">
+      <div
+        className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const i = Math.round(Math.abs(el.scrollLeft) / el.clientWidth);
+          if (i !== index && i >= 0 && i < urls.length) onIndexChange(i);
+        }}
+      >
+        {urls.map((url) => (
+          <img
+            key={url}
+            src={url}
+            alt={alt}
+            className="aspect-square w-full shrink-0 snap-center object-cover"
+          />
+        ))}
+      </div>
+      <div className="pointer-events-none relative -mt-7 flex justify-center gap-1.5 pb-3">
+        {urls.map((_, i) => (
+          <span
+            key={i}
+            className={`h-2 rounded-full transition-all ${
+              i === index ? 'w-5 bg-white shadow' : 'w-2 bg-white/60'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ActionButton({ emoji, label, danger, onClick }: {
   emoji: string;
   label: string;
@@ -186,8 +228,8 @@ function ActionButton({ emoji, label, danger, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-bold shadow-card transition active:scale-[0.98] ${
-        danger ? 'text-rose-600' : 'text-ink'
+      className={`flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-bold shadow-card transition active:scale-[0.98] ${
+        danger ? 'text-rose-600 dark:text-rose-300' : 'text-ink'
       }`}
     >
       <span className="text-lg">{emoji}</span>

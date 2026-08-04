@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatPrice } from '../lib/format';
@@ -104,6 +105,20 @@ export function StatsPage() {
           <StatTile value={totalSpent > 0 ? formatPrice(totalSpent) : '—'} label="סה״כ הושקע" />
         </div>
 
+        {totalActive > 0 && (
+          <Link
+            to="/season-swap"
+            className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-card transition active:scale-[0.98]"
+          >
+            <span className="text-3xl">🔄</span>
+            <span className="flex-1">
+              <span className="block font-bold text-ink">החלפת עונה</span>
+              <span className="block text-xs text-gray-500">מעבר מודרך על הארון: נשאר / עובר לאח / קטן מדי</span>
+            </span>
+            <span className="text-gray-300">‹</span>
+          </Link>
+        )}
+
         {byChild.length > 0 && <BarCard title="מי מלביש את הארון? (פריטים בארון)" rows={byChild} />}
         <BarCard title="לפי עונה (פריטים בארון)" rows={bySeason} />
         {byCategory.length > 0 && <BarCard title="לפי קטגוריה" rows={byCategory} />}
@@ -120,7 +135,7 @@ export function StatsPage() {
 
 function StatTile({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-2xl bg-white p-3 text-center shadow-card">
+    <div className="rounded-2xl bg-card p-3 text-center shadow-card">
       <div className="text-xl font-extrabold text-ink">{value}</div>
       <div className="mt-0.5 text-[11px] font-medium text-gray-500">{label}</div>
     </div>
@@ -130,7 +145,7 @@ function StatTile({ value, label }: { value: string; label: string }) {
 function BarCard({ title, rows, money }: { title: string; rows: BarRow[]; money?: boolean }) {
   const max = Math.max(...rows.map((r) => r.value), 1);
   return (
-    <section className="rounded-2xl bg-white p-4 shadow-card">
+    <section className="rounded-2xl bg-card p-4 shadow-card">
       <h2 className="mb-3 text-sm font-bold text-gray-600">{title}</h2>
       <div className="space-y-3">
         {rows.map((row) => (

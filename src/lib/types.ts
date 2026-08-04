@@ -34,7 +34,7 @@ export interface Item {
   year: number | null;
   quantity: number;
   status: ItemStatus;
-  image_path: string | null;
+  images: string[];
   created_at: string;
 }
 
@@ -52,5 +52,10 @@ export interface ItemInput {
   year: number | null;
   quantity: number;
   status: ItemStatus;
-  image_path: string | null;
+  images: string[];
+}
+
+export interface HouseholdMember {
+  id: string;
+  email: string | null;
 }

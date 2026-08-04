@@ -1,19 +1,19 @@
 import type { ItemStatus, Season } from './types';
 
 export const SEASONS: Record<Season, { label: string; emoji: string; chip: string; dot: string }> = {
-  winter: { label: 'חורף', emoji: '❄️', chip: 'bg-sky-100 text-sky-800', dot: 'bg-sky-400' },
-  summer: { label: 'קיץ', emoji: '☀️', chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
-  mid: { label: 'עונות מעבר', emoji: '🍂', chip: 'bg-orange-100 text-orange-800', dot: 'bg-orange-400' },
-  all: { label: 'כל השנה', emoji: '🌈', chip: 'bg-violet-100 text-violet-800', dot: 'bg-violet-400' },
+  winter: { label: 'חורף', emoji: '❄️', chip: 'bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300', dot: 'bg-sky-400' },
+  summer: { label: 'קיץ', emoji: '☀️', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300', dot: 'bg-amber-400' },
+  mid: { label: 'עונות מעבר', emoji: '🍂', chip: 'bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300', dot: 'bg-orange-400' },
+  all: { label: 'כל השנה', emoji: '🌈', chip: 'bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300', dot: 'bg-violet-400' },
 };
 
 export const SEASON_ORDER: Season[] = ['winter', 'summer', 'mid', 'all'];
 
 export const STATUSES: Record<ItemStatus, { label: string; emoji: string; chip: string }> = {
-  active: { label: 'בארון', emoji: '✅', chip: 'bg-emerald-100 text-emerald-800' },
-  waiting: { label: 'שמור לגדילה', emoji: '📦', chip: 'bg-blue-100 text-blue-800' },
-  to_buy: { label: 'לקנות', emoji: '🛒', chip: 'bg-amber-100 text-amber-800' },
-  outgrown: { label: 'קטן מדי', emoji: '📏', chip: 'bg-rose-100 text-rose-800' },
+  active: { label: 'בארון', emoji: '✅', chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300' },
+  waiting: { label: 'שמור לגדילה', emoji: '📦', chip: 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300' },
+  to_buy: { label: 'לקנות', emoji: '🛒', chip: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' },
+  outgrown: { label: 'קטן מדי', emoji: '📏', chip: 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300' },
   given: { label: 'הועבר הלאה', emoji: '🎁', chip: 'bg-gray-200 text-gray-600' },
 };
 

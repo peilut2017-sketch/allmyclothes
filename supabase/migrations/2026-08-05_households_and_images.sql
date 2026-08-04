@@ -1,11 +1,10 @@
 -- ============================================================
--- ארון המשפחה – סכמת מסד נתונים ל-Supabase (התקנה חדשה)
--- הריצו את הקובץ הזה ב-SQL Editor של פרויקט ה-Supabase שלכם.
--- אם כבר יש לכם התקנה פעילה מגרסה קודמת – אל תריצו את זה!
--- הריצו במקום זאת את קובצי המיגרציה שבתיקיית supabase/migrations.
+-- מיגרציה להתקנה קיימת: שיתוף משפחתי (households) + ריבוי תמונות
+-- הריצו את כל הקובץ הזה פעם אחת ב-SQL Editor.
+-- הנתונים הקיימים נשמרים במלואם.
 -- ============================================================
 
--- ---------- משק בית משותף (שיתוף בין שני הורים) ----------
+-- ---------- 1. טבלאות משק בית ----------
 create table if not exists public.households (
   id uuid primary key default gen_random_uuid(),
   name text,
@@ -20,12 +19,11 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
--- משק הבית של המשתמש המחובר
+-- ---------- 2. פונקציות ----------
 create or replace function public.my_household()
 returns uuid language sql stable security definer set search_path = public as
 $$ select household_id from public.profiles where id = auth.uid() $$;
 
--- יצירת משק בית ופרופיל בכניסה ראשונה (נקרא מהאפליקציה)
 create or replace function public.ensure_membership()
 returns uuid language plpgsql security definer set search_path = public as $$
 declare hid uuid;
@@ -39,7 +37,6 @@ begin
   return hid;
 end $$;
 
--- הצטרפות למשק בית של בן/בת זוג באמצעות קוד הזמנה
 create or replace function public.join_household(code text)
 returns boolean language plpgsql security definer set search_path = public as $$
 declare hid uuid;
@@ -51,7 +48,6 @@ begin
   return true;
 end $$;
 
--- עזיבת משק בית משותף (חוזרים למשק בית חדש וריק)
 create or replace function public.leave_household()
 returns uuid language plpgsql security definer set search_path = public as $$
 declare hid uuid;
@@ -61,7 +57,6 @@ begin
   return hid;
 end $$;
 
--- מילוי אוטומטי של household_id בכל הוספת רשומה
 create or replace function public.set_household_id()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
@@ -69,79 +64,44 @@ begin
   return new;
 end $$;
 
--- ---------- ילדים ----------
-create table if not exists public.children (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  household_id uuid not null references public.households (id),
-  name text not null,
-  birth_date date,
-  color text not null default '#f59e0b',
-  emoji text not null default '🧒',
-  created_at timestamptz not null default now()
-);
-
--- ---------- קטגוריות (שבת / חול / פיג'מות...) ----------
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  household_id uuid not null references public.households (id),
-  name text not null,
-  created_at timestamptz not null default now(),
-  unique (household_id, name)
-);
-
--- ---------- סוגי פריטים (מכנס / חולצה / אוברול...) ----------
-create table if not exists public.item_types (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  household_id uuid not null references public.households (id),
-  name text not null,
-  created_at timestamptz not null default now(),
-  unique (household_id, name)
-);
-
--- ---------- פריטי לבוש ----------
-create table if not exists public.items (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  household_id uuid not null references public.households (id),
-  name text not null,
-  description text,
-  child_id uuid references public.children (id) on delete set null,
-  category_id uuid references public.categories (id) on delete set null,
-  type_id uuid references public.item_types (id) on delete set null,
-  size_label text,                              -- מידה: "2-3", "104", "6-12 ח'" וכו'
-  season text not null default 'all',           -- winter / summer / mid / all
-  store text,                                   -- חנות / יצרן
-  location text,                                -- מיקום אחסון: איזה ארון / מדף
-  price numeric(10, 2),
-  year int,                                     -- לאיזו שנה מיועד
-  quantity int not null default 1,
-  status text not null default 'active',        -- active / waiting / to_buy / outgrown / given
-  images text[] not null default '{}',          -- נתיבי תמונות בתוך ה-bucket (הראשונה = ראשית)
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists items_household_idx on public.items (household_id);
-create index if not exists items_child_idx on public.items (child_id);
-create index if not exists children_household_idx on public.children (household_id);
-
--- עדכון אוטומטי של updated_at
-create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+-- ---------- 3. משק בית לכל משתמש קיים ----------
+do $$
+declare u record; hid uuid;
 begin
-  new.updated_at = now();
-  return new;
+  for u in select id, email from auth.users loop
+    if not exists (select 1 from public.profiles where id = u.id) then
+      insert into public.households (name) values (null) returning id into hid;
+      insert into public.profiles (id, household_id, email) values (u.id, hid, u.email);
+    end if;
+  end loop;
 end $$;
 
-drop trigger if exists items_set_updated_at on public.items;
-create trigger items_set_updated_at
-  before update on public.items
-  for each row execute function public.set_updated_at();
+-- ---------- 4. עמודת household_id בטבלאות הנתונים + מילוי ----------
+alter table public.children   add column if not exists household_id uuid references public.households (id);
+alter table public.categories add column if not exists household_id uuid references public.households (id);
+alter table public.item_types add column if not exists household_id uuid references public.households (id);
+alter table public.items      add column if not exists household_id uuid references public.households (id);
 
--- טריגרים למילוי household_id
+update public.children c   set household_id = p.household_id from public.profiles p where p.id = c.user_id and c.household_id is null;
+update public.categories c set household_id = p.household_id from public.profiles p where p.id = c.user_id and c.household_id is null;
+update public.item_types t set household_id = p.household_id from public.profiles p where p.id = t.user_id and t.household_id is null;
+update public.items i      set household_id = p.household_id from public.profiles p where p.id = i.user_id and i.household_id is null;
+
+alter table public.children   alter column household_id set not null;
+alter table public.categories alter column household_id set not null;
+alter table public.item_types alter column household_id set not null;
+alter table public.items      alter column household_id set not null;
+
+-- ייחודיות שמות לפי משק בית במקום לפי משתמש
+alter table public.categories drop constraint if exists categories_user_id_name_key;
+alter table public.item_types drop constraint if exists item_types_user_id_name_key;
+create unique index if not exists categories_household_name_key on public.categories (household_id, name);
+create unique index if not exists item_types_household_name_key on public.item_types (household_id, name);
+
+create index if not exists items_household_idx on public.items (household_id);
+create index if not exists children_household_idx on public.children (household_id);
+
+-- ---------- 5. טריגרים למילוי household_id ----------
 drop trigger if exists children_set_household on public.children;
 create trigger children_set_household before insert on public.children
   for each row execute function public.set_household_id();
@@ -155,15 +115,15 @@ drop trigger if exists items_set_household on public.items;
 create trigger items_set_household before insert on public.items
   for each row execute function public.set_household_id();
 
--- ============================================================
--- אבטחת שורות (RLS): כל משק בית רואה ומנהל רק את הנתונים שלו
--- ============================================================
+-- ---------- 6. ריבוי תמונות: image_path -> images[] ----------
+alter table public.items add column if not exists images text[] not null default '{}';
+update public.items set images = array[image_path]
+  where image_path is not null and (images is null or images = '{}');
+alter table public.items drop column if exists image_path;
+
+-- ---------- 7. עדכון חוקי RLS לפי משק בית ----------
 alter table public.households enable row level security;
 alter table public.profiles   enable row level security;
-alter table public.children   enable row level security;
-alter table public.categories enable row level security;
-alter table public.item_types enable row level security;
-alter table public.items      enable row level security;
 
 drop policy if exists "households_own" on public.households;
 drop policy if exists "profiles_own"   on public.profiles;
@@ -194,14 +154,7 @@ create policy "items_own" on public.items
   for all to authenticated
   using (household_id = public.my_household()) with check (household_id = public.my_household());
 
--- ============================================================
--- אחסון תמונות: bucket פרטי, תיקייה לכל משק בית
--- (הקריאה מתירה גם תיקיות ישנות של חברי משק הבית)
--- ============================================================
-insert into storage.buckets (id, name, public)
-values ('clothes', 'clothes', false)
-on conflict (id) do nothing;
-
+-- ---------- 8. חוקי אחסון: תיקיית משק בית + תיקיות ישנות של חברים ----------
 drop policy if exists "clothes_select_own" on storage.objects;
 drop policy if exists "clothes_insert_own" on storage.objects;
 drop policy if exists "clothes_update_own" on storage.objects;

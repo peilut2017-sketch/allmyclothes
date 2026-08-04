@@ -1,20 +1,22 @@
 import { Link } from 'react-router-dom';
 import { SEASONS } from '../lib/constants';
 import { useData } from '../context/DataContext';
+import { outgrowStatus } from '../lib/sizes';
 import type { Item } from '../lib/types';
 
 export function ItemCard({ item }: { item: Item }) {
   const { children, itemTypes, imageUrls } = useData();
   const child = children.find((c) => c.id === item.child_id);
   const type = itemTypes.find((t) => t.id === item.type_id);
-  const imageUrl = item.image_path ? imageUrls[item.image_path] : null;
+  const imageUrl = item.images[0] ? imageUrls[item.images[0]] : null;
   const season = SEASONS[item.season];
   const faded = item.status === 'outgrown' || item.status === 'given';
+  const outgrow = outgrowStatus(item, child);
 
   return (
     <Link
       to={`/item/${item.id}`}
-      className={`block overflow-hidden rounded-2xl bg-white shadow-card transition active:scale-[0.98] ${faded ? 'opacity-60' : ''}`}
+      className={`block overflow-hidden rounded-2xl bg-card shadow-card transition active:scale-[0.98] ${faded ? 'opacity-60' : ''}`}
     >
       <div className="relative aspect-square bg-gray-50">
         {imageUrl ? (
@@ -25,19 +27,27 @@ export function ItemCard({ item }: { item: Item }) {
           </div>
         )}
         <span
-          className="absolute top-2 start-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-sm shadow-sm"
+          className="absolute top-2 start-2 flex h-6 w-6 items-center justify-center rounded-full bg-card/90 text-sm shadow-sm"
           title={season.label}
         >
           {season.emoji}
         </span>
         <div className="absolute top-2 end-2 flex flex-col items-end gap-1">
           {item.quantity > 1 && (
-            <span className="rounded-full bg-ink/70 px-2 py-0.5 text-xs font-bold text-white">
+            <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white">
               ×{item.quantity}
             </span>
           )}
           {item.status === 'to_buy' && (
             <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">🛒 לקנות</span>
+          )}
+          {outgrow && (
+            <span
+              className="rounded-full bg-rose-500/90 px-2 py-0.5 text-xs font-bold text-white"
+              title={outgrow === 'past' ? 'כנראה כבר קטן' : 'בקרוב קטן'}
+            >
+              ⏰
+            </span>
           )}
         </div>
         {child && (

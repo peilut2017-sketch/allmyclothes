@@ -109,13 +109,13 @@ export function ClosetPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="חיפוש: שם, תיאור, חנות..."
-                className="w-full rounded-2xl border border-gray-200 bg-white py-2.5 pe-4 ps-10 text-sm outline-none focus:border-amber-400"
+                className="w-full rounded-2xl border border-gray-200 bg-card py-2.5 pe-4 ps-10 text-sm outline-none focus:border-amber-400"
               />
               <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
             <button
               onClick={() => setSheetOpen(true)}
-              className="relative rounded-2xl border border-gray-200 bg-white px-3.5 text-sm font-semibold text-gray-600 active:scale-95"
+              className="relative rounded-2xl border border-gray-200 bg-card px-3.5 text-sm font-semibold text-gray-600 active:scale-95"
               aria-label="סינון"
             >
               סינון
@@ -128,7 +128,7 @@ export function ClosetPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="rounded-2xl border border-gray-200 bg-white px-2 text-sm text-gray-600 outline-none"
+              className="rounded-2xl border border-gray-200 bg-card px-2 text-sm text-gray-600 outline-none"
               aria-label="מיון"
             >
               {Object.entries(SORT_LABELS).map(([key, label]) => (
@@ -155,7 +155,7 @@ export function ClosetPage() {
 
       <main className="mx-auto max-w-lg px-4 pt-2">
         {error && (
-          <div className="mb-4 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+          <div className="mb-4 rounded-2xl bg-rose-50 dark:bg-rose-500/15 p-4 text-sm text-rose-700 dark:text-rose-300">
             שגיאה בטעינת הנתונים: {error}
             <button onClick={() => void reload()} className="ms-2 font-semibold underline">רענון</button>
           </div>
@@ -202,7 +202,7 @@ function ChildChip({ label, color, active, onClick }: { label: string; color?: s
     <button
       onClick={onClick}
       className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition active:scale-95 ${
-        active ? 'border-transparent text-white' : 'border-gray-200 bg-white text-gray-600'
+        active ? 'border-transparent text-white' : 'border-gray-200 bg-card text-gray-600'
       }`}
       style={active ? { backgroundColor: color ?? '#2d2a26' } : undefined}
     >

@@ -24,8 +24,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative z-10 max-h-[88dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 pb-8 shadow-sheet sm:max-w-md sm:rounded-3xl sm:pb-5">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative z-10 max-h-[88dvh] w-full overflow-y-auto rounded-t-3xl bg-card p-5 pb-8 shadow-sheet sm:max-w-md sm:rounded-3xl sm:pb-5">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-gray-200 sm:hidden" />
         {title && <h2 className="mb-4 text-lg font-bold text-ink">{title}</h2>}
         {children}

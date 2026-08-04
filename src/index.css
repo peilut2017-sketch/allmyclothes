@@ -3,6 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --c-cream: 250 247 242;
+    --c-card: 255 255 255;
+    --c-ink: 45 42 38;
+    --c-g50: 249 250 251;
+    --c-g100: 243 244 246;
+    --c-g200: 229 231 235;
+    --c-g300: 209 213 219;
+    --c-g400: 156 163 175;
+    --c-g500: 107 114 128;
+    --c-g600: 75 85 99;
+    --c-g700: 55 65 81;
+  }
+  .dark {
+    --c-cream: 23 21 19;
+    --c-card: 39 36 33;
+    --c-ink: 236 232 226;
+    --c-g50: 46 43 40;
+    --c-g100: 55 51 47;
+    --c-g200: 70 65 60;
+    --c-g300: 90 84 77;
+    --c-g400: 146 139 130;
+    --c-g500: 170 163 153;
+    --c-g600: 200 193 183;
+    --c-g700: 218 212 203;
+  }
   html {
     -webkit-tap-highlight-color: transparent;
   }
@@ -13,6 +39,6 @@
 
 @layer components {
   .input {
-    @apply w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-ink outline-none transition focus:border-amber-400;
+    @apply w-full rounded-2xl border border-gray-200 bg-card px-4 py-3 text-ink outline-none transition focus:border-amber-400;
   }
 }
