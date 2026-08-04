@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog } from '../components/Modal';
@@ -12,16 +13,17 @@ export function SettingsPage() {
     addItemType, renameItemType, deleteItemType,
   } = useData();
   const [confirm, setConfirm] = useState<{ kind: 'category' | 'type'; id: string; name: string } | null>(null);
+  const navigate = useNavigate();
 
   const exportCsv = () => {
-    const header = ['שם', 'תיאור', 'ילד/ה', 'מידה', 'עונה', 'קטגוריה', 'סוג', 'חנות/יצרן', 'מחיר', 'שנה', 'כמות', 'סטטוס'];
+    const header = ['שם', 'תיאור', 'ילד/ה', 'מידה', 'עונה', 'קטגוריה', 'סוג', 'חנות/יצרן', 'מיקום', 'מחיר', 'שנה', 'כמות', 'סטטוס'];
     const lines = items.map((i) => {
       const child = children.find((c) => c.id === i.child_id)?.name ?? 'כללי';
       const cat = categories.find((c) => c.id === i.category_id)?.name ?? '';
       const type = itemTypes.find((t) => t.id === i.type_id)?.name ?? '';
       return [
         i.name, i.description ?? '', child, i.size_label ?? '', SEASONS[i.season].label,
-        cat, type, i.store ?? '', i.price ?? '', i.year ?? '', i.quantity, STATUSES[i.status].label,
+        cat, type, i.store ?? '', i.location ?? '', i.price ?? '', i.year ?? '', i.quantity, STATUSES[i.status].label,
       ]
         .map((v) => `"${String(v).replaceAll('"', '""')}"`)
         .join(',');
@@ -39,7 +41,10 @@ export function SettingsPage() {
   return (
     <div className="min-h-dvh bg-cream pb-28">
       <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
-        <h1 className="mx-auto max-w-lg text-2xl font-extrabold text-ink">הגדרות ⚙️</h1>
+        <div className="mx-auto flex max-w-lg items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
+          <h1 className="text-2xl font-extrabold text-ink">הגדרות ⚙️</h1>
+        </div>
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">

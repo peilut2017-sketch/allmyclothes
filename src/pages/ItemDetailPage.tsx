@@ -32,6 +32,7 @@ export function ItemDetailPage() {
   const details: [string, string][] = [
     ['שיוך', child ? `${child.emoji} ${child.name}` : '🏠 כללי'],
     ['מידה / גיל', item.size_label ?? '—'],
+    ['📍 מיקום אחסון', item.location ?? '—'],
     ['קטגוריה', category?.name ?? '—'],
     ['סוג פריט', type?.name ?? '—'],
     ['חנות / יצרן', item.store ?? '—'],
@@ -82,6 +83,17 @@ export function ItemDetailPage() {
             </div>
           ))}
         </dl>
+
+        {item.status === 'to_buy' && (
+          <button
+            onClick={() => {
+              void updateItem(item.id, { status: 'active' });
+            }}
+            className="mt-5 w-full rounded-2xl bg-emerald-500 py-3.5 font-bold text-white shadow-md shadow-emerald-500/30 active:scale-[0.98]"
+          >
+            ✓ קניתי! העברה לארון
+          </button>
+        )}
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <ActionButton emoji="🔁" label="שינוי סטטוס" onClick={() => setStatusOpen(true)} />

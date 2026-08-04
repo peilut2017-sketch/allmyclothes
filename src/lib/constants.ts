@@ -12,11 +12,17 @@ export const SEASON_ORDER: Season[] = ['winter', 'summer', 'mid', 'all'];
 export const STATUSES: Record<ItemStatus, { label: string; emoji: string; chip: string }> = {
   active: { label: 'בארון', emoji: '✅', chip: 'bg-emerald-100 text-emerald-800' },
   waiting: { label: 'שמור לגדילה', emoji: '📦', chip: 'bg-blue-100 text-blue-800' },
+  to_buy: { label: 'לקנות', emoji: '🛒', chip: 'bg-amber-100 text-amber-800' },
   outgrown: { label: 'קטן מדי', emoji: '📏', chip: 'bg-rose-100 text-rose-800' },
   given: { label: 'הועבר הלאה', emoji: '🎁', chip: 'bg-gray-200 text-gray-600' },
 };
 
-export const STATUS_ORDER: ItemStatus[] = ['active', 'waiting', 'outgrown', 'given'];
+export const STATUS_ORDER: ItemStatus[] = ['active', 'waiting', 'to_buy', 'outgrown', 'given'];
+
+export const LOCATION_SUGGESTIONS = [
+  'ארון חדר ילדים', 'ארון הורים', 'מגירה עליונה', 'מגירה תחתונה',
+  'מדף עליון', 'בוידעם', 'מחסן', 'קופסת אחסון',
+];
 
 export const CHILD_COLORS = [
   '#f59e0b', '#ef4444', '#ec4899', '#a855f7',

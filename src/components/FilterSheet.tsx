@@ -10,6 +10,7 @@ export interface Filters {
   statuses: ItemStatus[];
   sizes: string[];
   years: number[];
+  locations: string[];
 }
 
 export const EMPTY_FILTERS: Filters = {
@@ -19,6 +20,7 @@ export const EMPTY_FILTERS: Filters = {
   statuses: ['active', 'waiting'],
   sizes: [],
   years: [],
+  locations: [],
 };
 
 export function countActiveFilters(f: Filters): number {
@@ -28,6 +30,7 @@ export function countActiveFilters(f: Filters): number {
     f.typeIds.length +
     f.sizes.length +
     f.years.length +
+    f.locations.length +
     (f.statuses.length === EMPTY_FILTERS.statuses.length &&
     EMPTY_FILTERS.statuses.every((s) => f.statuses.includes(s))
       ? 0
@@ -46,6 +49,7 @@ interface FilterSheetProps {
   onChange: (f: Filters) => void;
   availableSizes: string[];
   availableYears: number[];
+  availableLocations: string[];
 }
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -73,7 +77,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export function FilterSheet({ open, onClose, filters, onChange, availableSizes, availableYears }: FilterSheetProps) {
+export function FilterSheet({ open, onClose, filters, onChange, availableSizes, availableYears, availableLocations }: FilterSheetProps) {
   const { categories, itemTypes } = useData();
 
   return (
@@ -119,6 +123,16 @@ export function FilterSheet({ open, onClose, filters, onChange, availableSizes, 
           {availableSizes.map((s) => (
             <Chip key={s} active={filters.sizes.includes(s)} onClick={() => onChange({ ...filters, sizes: toggle(filters.sizes, s) })}>
               {s}
+            </Chip>
+          ))}
+        </Section>
+      )}
+
+      {availableLocations.length > 0 && (
+        <Section title="מיקום אחסון">
+          {availableLocations.map((l) => (
+            <Chip key={l} active={filters.locations.includes(l)} onClick={() => onChange({ ...filters, locations: toggle(filters.locations, l) })}>
+              📍 {l}
             </Chip>
           ))}
         </Section>

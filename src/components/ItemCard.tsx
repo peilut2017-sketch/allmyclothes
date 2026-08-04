@@ -30,11 +30,16 @@ export function ItemCard({ item }: { item: Item }) {
         >
           {season.emoji}
         </span>
-        {item.quantity > 1 && (
-          <span className="absolute top-2 end-2 rounded-full bg-ink/70 px-2 py-0.5 text-xs font-bold text-white">
-            ×{item.quantity}
-          </span>
-        )}
+        <div className="absolute top-2 end-2 flex flex-col items-end gap-1">
+          {item.quantity > 1 && (
+            <span className="rounded-full bg-ink/70 px-2 py-0.5 text-xs font-bold text-white">
+              ×{item.quantity}
+            </span>
+          )}
+          {item.status === 'to_buy' && (
+            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">🛒 לקנות</span>
+          )}
+        </div>
         {child && (
           <div
             className="absolute bottom-0 inset-x-0 h-1.5"

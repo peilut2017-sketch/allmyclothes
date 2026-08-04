@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
@@ -32,6 +32,10 @@ export function ClosetPage() {
     () => [...new Set(items.map((i) => i.year).filter((y): y is number => y != null))].sort((a, b) => b - a),
     [items],
   );
+  const availableLocations = useMemo(
+    () => [...new Set(items.map((i) => i.location).filter((l): l is string => Boolean(l)))].sort((a, b) => a.localeCompare(b, 'he')),
+    [items],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -44,8 +48,9 @@ export function ClosetPage() {
       if (filters.typeIds.length && (!item.type_id || !filters.typeIds.includes(item.type_id))) return false;
       if (filters.sizes.length && (!item.size_label || !filters.sizes.includes(item.size_label))) return false;
       if (filters.years.length && (item.year == null || !filters.years.includes(item.year))) return false;
+      if (filters.locations.length && (!item.location || !filters.locations.includes(item.location))) return false;
       if (q) {
-        const haystack = `${item.name} ${item.description ?? ''} ${item.store ?? ''} ${item.size_label ?? ''}`.toLowerCase();
+        const haystack = `${item.name} ${item.description ?? ''} ${item.store ?? ''} ${item.size_label ?? ''} ${item.location ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -86,10 +91,15 @@ export function ClosetPage() {
         <div className="mx-auto max-w-lg">
           <div className="mb-3 flex items-center justify-between">
             <h1 className="text-2xl font-extrabold text-ink">הארון שלנו 👕</h1>
-            <span className="text-sm text-gray-500">
-              {filtered.length} פריטים
-              {totalValue > 0 && ` · ${formatPrice(totalValue)}`}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-sm text-gray-500">
+                {filtered.length} פריטים
+                {totalValue > 0 && ` · ${formatPrice(totalValue)}`}
+              </span>
+              <Link to="/settings" aria-label="הגדרות" className="text-lg text-gray-400">
+                ⚙️
+              </Link>
+            </div>
           </div>
 
           <div className="mb-3 flex gap-2">
@@ -105,10 +115,10 @@ export function ClosetPage() {
             </div>
             <button
               onClick={() => setSheetOpen(true)}
-              className="relative rounded-2xl border border-gray-200 bg-white px-3.5 text-lg active:scale-95"
+              className="relative rounded-2xl border border-gray-200 bg-white px-3.5 text-sm font-semibold text-gray-600 active:scale-95"
               aria-label="סינון"
             >
-              ⚙
+              סינון
               {activeFilterCount > 0 && (
                 <span className="absolute -top-1.5 -end-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
                   {activeFilterCount}
@@ -181,6 +191,7 @@ export function ClosetPage() {
         onChange={setFilters}
         availableSizes={availableSizes}
         availableYears={availableYears}
+        availableLocations={availableLocations}
       />
     </div>
   );

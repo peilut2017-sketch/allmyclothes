@@ -19,7 +19,10 @@ export function StatsPage() {
 
   const totalActive = qty(activeItems);
   const totalWaiting = qty(items.filter((i) => i.status === 'waiting'));
-  const totalSpent = items.reduce((s, i) => s + (i.price ?? 0) * i.quantity, 0);
+  const totalToBuy = qty(items.filter((i) => i.status === 'to_buy'));
+  // פריטים ברשימת הקניות עוד לא נקנו – לא נספרים בהוצאות
+  const purchased = useMemo(() => items.filter((i) => i.status !== 'to_buy'), [items]);
+  const totalSpent = purchased.reduce((s, i) => s + (i.price ?? 0) * i.quantity, 0);
 
   const byChild: BarRow[] = useMemo(() => {
     const rows: BarRow[] = children.map((c) => {
@@ -67,9 +70,9 @@ export function StatsPage() {
   );
 
   const byYear: BarRow[] = useMemo(() => {
-    const years = [...new Set(items.map((i) => i.year).filter((y): y is number => y != null))].sort((a, b) => b - a);
+    const years = [...new Set(purchased.map((i) => i.year).filter((y): y is number => y != null))].sort((a, b) => b - a);
     return years.map((y) => {
-      const list = items.filter((i) => i.year === y);
+      const list = purchased.filter((i) => i.year === y);
       return {
         key: String(y),
         label: String(y),
@@ -78,7 +81,7 @@ export function StatsPage() {
         extra: `${qty(list)} פריטים`,
       };
     }).filter((r) => r.value > 0);
-  }, [items]);
+  }, [purchased]);
 
   const byStatus: BarRow[] = STATUS_ORDER.map((s) => ({
     key: s,
@@ -94,9 +97,10 @@ export function StatsPage() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <StatTile value={String(totalActive)} label="בגדים בארון" />
           <StatTile value={String(totalWaiting)} label="שמורים לגדילה" />
+          <StatTile value={String(totalToBuy)} label="ברשימת הקניות 🛒" />
           <StatTile value={totalSpent > 0 ? formatPrice(totalSpent) : '—'} label="סה״כ הושקע" />
         </div>
 

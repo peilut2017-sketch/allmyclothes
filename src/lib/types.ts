@@ -1,5 +1,5 @@
 export type Season = 'winter' | 'summer' | 'mid' | 'all';
-export type ItemStatus = 'active' | 'waiting' | 'outgrown' | 'given';
+export type ItemStatus = 'active' | 'waiting' | 'to_buy' | 'outgrown' | 'given';
 
 export interface Child {
   id: string;
@@ -29,6 +29,7 @@ export interface Item {
   size_label: string | null;
   season: Season;
   store: string | null;
+  location: string | null;
   price: number | null;
   year: number | null;
   quantity: number;
@@ -46,6 +47,7 @@ export interface ItemInput {
   size_label: string | null;
   season: Season;
   store: string | null;
+  location: string | null;
   price: number | null;
   year: number | null;
   quantity: number;

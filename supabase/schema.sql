@@ -45,10 +45,11 @@ create table if not exists public.items (
   size_label text,                              -- מידה: "2-3", "104", "6-12 ח'" וכו'
   season text not null default 'all',           -- winter / summer / mid / all
   store text,                                   -- חנות / יצרן
+  location text,                                -- מיקום אחסון: איזה ארון / מדף
   price numeric(10, 2),
   year int,                                     -- לאיזו שנה מיועד
   quantity int not null default 1,
-  status text not null default 'active',        -- active / waiting / outgrown / given
+  status text not null default 'active',        -- active / waiting / to_buy / outgrown / given
   image_path text,                              -- נתיב בתוך ה-bucket
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

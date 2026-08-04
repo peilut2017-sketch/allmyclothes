@@ -8,6 +8,7 @@ import { ClosetPage } from './pages/ClosetPage';
 import { ItemFormPage } from './pages/ItemFormPage';
 import { ItemDetailPage } from './pages/ItemDetailPage';
 import { ChildrenPage } from './pages/ChildrenPage';
+import { ShoppingPage } from './pages/ShoppingPage';
 import { StatsPage } from './pages/StatsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -48,6 +49,7 @@ function Shell() {
         <Route path="/edit/:id" element={<ItemFormPage />} />
         <Route path="/item/:id" element={<ItemDetailPage />} />
         <Route path="/children" element={<ChildrenPage />} />
+        <Route path="/shopping" element={<ShoppingPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

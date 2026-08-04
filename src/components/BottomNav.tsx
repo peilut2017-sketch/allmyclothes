@@ -2,10 +2,10 @@ import { NavLink, useNavigate } from 'react-router-dom';
 
 const tabs = [
   { to: '/', label: 'הארון', icon: '👕' },
-  { to: '/children', label: 'ילדים', icon: '🧒' },
+  { to: '/shopping', label: 'לקנות', icon: '🛒' },
   { to: null, label: 'הוספה', icon: '+' },
+  { to: '/children', label: 'ילדים', icon: '🧒' },
   { to: '/stats', label: 'סיכום', icon: '📊' },
-  { to: '/settings', label: 'הגדרות', icon: '⚙️' },
 ] as const;
 
 export function BottomNav() {

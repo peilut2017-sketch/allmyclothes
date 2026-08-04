@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ImagePicker } from '../components/ImagePicker';
-import { SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER, SIZE_SUGGESTIONS } from '../lib/constants';
+import { LOCATION_SUGGESTIONS, SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER, SIZE_SUGGESTIONS } from '../lib/constants';
 import type { ItemInput, ItemStatus, Season } from '../lib/types';
 
 export function ItemFormPage() {
@@ -12,7 +12,9 @@ export function ItemFormPage() {
   const { items, children, categories, itemTypes, addItem, updateItem, addCategory, addItemType } = useData();
 
   const editing = id ? items.find((i) => i.id === id) : undefined;
-  const duplicateOf = (location.state as { duplicateOf?: string } | null)?.duplicateOf;
+  const navState = location.state as { duplicateOf?: string; shopping?: boolean } | null;
+  const duplicateOf = navState?.duplicateOf;
+  const fromShopping = navState?.shopping === true;
   const source = editing ?? (duplicateOf ? items.find((i) => i.id === duplicateOf) : undefined);
 
   const [form, setForm] = useState<ItemInput>(() => ({
@@ -25,10 +27,11 @@ export function ItemFormPage() {
     size_label: duplicateOf ? null : (source?.size_label ?? null),
     season: source?.season ?? 'all',
     store: source?.store ?? null,
+    location: source?.location ?? null,
     price: source?.price ?? null,
     year: source?.year ?? new Date().getFullYear(),
     quantity: source?.quantity ?? 1,
-    status: source?.status ?? 'active',
+    status: source?.status ?? (fromShopping ? 'to_buy' : 'active'),
     image_path: duplicateOf ? null : (source?.image_path ?? null),
   }));
   const [busy, setBusy] = useState(false);
@@ -42,6 +45,12 @@ export function ItemFormPage() {
     return [current + 2, current + 1, current, current - 1, current - 2];
   }, []);
 
+  // הצעות מיקום: מיקומים שכבר בשימוש בארון + הצעות ברירת מחדל
+  const locationOptions = useMemo(() => {
+    const used = items.map((i) => i.location).filter((l): l is string => Boolean(l));
+    return [...new Set([...used, ...LOCATION_SUGGESTIONS])];
+  }, [items]);
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
@@ -54,7 +63,7 @@ export function ItemFormPage() {
         navigate(`/item/${editing.id}`, { replace: true });
       } else {
         await addItem(payload);
-        navigate('/', { replace: true });
+        navigate(fromShopping || payload.status === 'to_buy' ? '/shopping' : '/', { replace: true });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'השמירה נכשלה, נסו שוב');
@@ -78,7 +87,7 @@ export function ItemFormPage() {
       <header className="sticky top-0 z-30 flex items-center gap-3 bg-cream/95 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
         <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
         <h1 className="text-xl font-extrabold text-ink">
-          {editing ? 'עריכת פריט' : duplicateOf ? 'שכפול פריט' : 'פריט חדש'}
+          {editing ? 'עריכת פריט' : duplicateOf ? 'שכפול פריט' : fromShopping ? 'מה צריך לקנות?' : 'פריט חדש'}
         </h1>
       </header>
 
@@ -211,6 +220,22 @@ export function ItemFormPage() {
             />
           </Field>
         </div>
+
+        <Field label="מיקום אחסון (איזה ארון / מדף)">
+          <input
+            type="text"
+            list="location-suggestions"
+            value={form.location ?? ''}
+            onChange={(e) => set('location', e.target.value || null)}
+            placeholder="למשל: ארון חדר ילדים – מדף עליון"
+            className="input"
+          />
+          <datalist id="location-suggestions">
+            {locationOptions.map((l) => (
+              <option key={l} value={l} />
+            ))}
+          </datalist>
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="כמות">
