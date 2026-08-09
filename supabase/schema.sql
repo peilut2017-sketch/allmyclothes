@@ -119,6 +119,7 @@ create table if not exists public.items (
   year int,                                     -- לאיזו שנה מיועד
   quantity int not null default 1,
   status text not null default 'active',        -- active / waiting / to_buy / outgrown / given
+  condition int check (condition between 1 and 10),  -- מצב הבגד: 1 לזריקה, 10 חדש
   images text[] not null default '{}',          -- נתיבי תמונות בתוך ה-bucket (הראשונה = ראשית)
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

@@ -32,7 +32,7 @@ export const CHILD_COLORS = [
 export const CHILD_EMOJIS = ['👶', '🧒', '👧', '👦', '🧑', '👸', '🦸', '🐻', '🦄', '⚽'];
 
 export const SIZE_SUGGESTIONS = [
-  '0-3 ח\'', '3-6 ח\'', '6-12 ח\'', '12-18 ח\'', '18-24 ח\'',
+  '0-3 ח\'', '3-6 ח\'', '6-9 ח\'', '6-12 ח\'', '9-12 ח\'', '12-18 ח\'', '18-24 ח\'',
   '2-3', '3-4', '4-5', '5-6', '6-7', '7-8', '8-9', '9-10',
   '10-11', '11-12', '12-13', '13-14', '14-16',
 ];
@@ -46,3 +46,17 @@ export const DEFAULT_ITEM_TYPES = [
 ];
 
 export const GENERAL_CHILD_ID = 'general';
+
+/** תיאור מילולי לדירוג מצב הבגד (1-10) */
+export function conditionLabel(condition: number): string {
+  if (condition >= 10) return 'חדש ✨';
+  if (condition === 9) return 'כמו חדש';
+  if (condition === 8) return 'מצוין';
+  if (condition === 7) return 'טוב מאוד';
+  if (condition === 6) return 'טוב';
+  if (condition === 5) return 'סביר';
+  if (condition === 4) return 'משומש';
+  if (condition === 3) return 'בלוי';
+  if (condition === 2) return 'בלוי מאוד';
+  return 'לזריקה';
+}

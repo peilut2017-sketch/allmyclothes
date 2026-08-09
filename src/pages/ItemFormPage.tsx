@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ImagePicker } from '../components/ImagePicker';
+import { ConditionPicker } from '../components/ConditionPicker';
 import { LOCATION_SUGGESTIONS, SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER, SIZE_SUGGESTIONS } from '../lib/constants';
 import type { ItemInput, ItemStatus, Season } from '../lib/types';
 
@@ -36,6 +37,7 @@ export function ItemFormPage() {
     year: source?.year ?? new Date().getFullYear(),
     quantity: source?.quantity ?? 1,
     status: source?.status ?? (fromShopping ? 'to_buy' : 'active'),
+    condition: source?.condition ?? null,
     images: duplicateOf ? [] : (source?.images ?? []),
     ...navState?.prefill,
   }));
@@ -54,6 +56,12 @@ export function ItemFormPage() {
   const locationOptions = useMemo(() => {
     const used = items.map((i) => i.location).filter((l): l is string => Boolean(l));
     return [...new Set([...used, ...LOCATION_SUGGESTIONS])];
+  }, [items]);
+
+  // הצעות מידה: מידות שהוזנו ידנית בעבר מצטרפות לרשימה המובנית
+  const sizeOptions = useMemo(() => {
+    const used = items.map((i) => i.size_label).filter((s): s is string => Boolean(s));
+    return [...new Set([...SIZE_SUGGESTIONS, ...used])];
   }, [items]);
 
   const submit = async (e: FormEvent) => {
@@ -150,7 +158,7 @@ export function ItemFormPage() {
               className="input"
             />
             <datalist id="size-suggestions">
-              {SIZE_SUGGESTIONS.map((s) => (
+              {sizeOptions.map((s) => (
                 <option key={s} value={s} />
               ))}
             </datalist>
@@ -276,6 +284,10 @@ export function ItemFormPage() {
             </select>
           </Field>
         </div>
+
+        <Field label="מצב הבגד (1 = לזריקה, 10 = חדש)">
+          <ConditionPicker value={form.condition} onChange={(c) => set('condition', c)} />
+        </Field>
 
         <Field label="תיאור / הערות">
           <textarea

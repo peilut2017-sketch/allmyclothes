@@ -34,6 +34,7 @@ export interface Item {
   year: number | null;
   quantity: number;
   status: ItemStatus;
+  condition: number | null;
   images: string[];
   created_at: string;
 }
@@ -52,6 +53,7 @@ export interface ItemInput {
   year: number | null;
   quantity: number;
   status: ItemStatus;
+  condition: number | null;
   images: string[];
 }
 

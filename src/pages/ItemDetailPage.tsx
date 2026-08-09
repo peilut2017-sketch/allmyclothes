@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { SeasonBadge, StatusBadge } from '../components/Badges';
 import { ConfirmDialog, Modal } from '../components/Modal';
-import { STATUSES, STATUS_ORDER } from '../lib/constants';
+import { ConditionPicker } from '../components/ConditionPicker';
+import { conditionLabel, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatDate, formatPrice } from '../lib/format';
 
 export function ItemDetailPage() {
@@ -13,6 +14,7 @@ export function ItemDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [conditionOpen, setConditionOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const item = items.find((i) => i.id === id);
@@ -33,6 +35,7 @@ export function ItemDetailPage() {
   const details: [string, string][] = [
     ['שיוך', child ? `${child.emoji} ${child.name}` : '🏠 כללי'],
     ['מידה / גיל', item.size_label ?? '—'],
+    ['🧵 מצב הבגד', item.condition != null ? `${item.condition}/10 · ${conditionLabel(item.condition)}` : 'לחצו לדירוג'],
     ['📍 מיקום אחסון', item.location ?? '—'],
     ['קטגוריה', category?.name ?? '—'],
     ['סוג פריט', type?.name ?? '—'],
@@ -79,12 +82,19 @@ export function ItemDetailPage() {
         {item.description && <p className="mt-1 text-gray-600">{item.description}</p>}
 
         <dl className="mt-4 divide-y divide-gray-100 rounded-2xl bg-card px-4 shadow-card">
-          {details.map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between py-3 text-sm">
-              <dt className="text-gray-500">{label}</dt>
-              <dd className="font-semibold text-ink">{value}</dd>
-            </div>
-          ))}
+          {details.map(([label, value]) => {
+            const isCondition = label.includes('מצב הבגד');
+            return (
+              <div
+                key={label}
+                className={`flex items-center justify-between py-3 text-sm ${isCondition ? 'cursor-pointer' : ''}`}
+                onClick={isCondition ? () => setConditionOpen(true) : undefined}
+              >
+                <dt className="text-gray-500">{label}</dt>
+                <dd className={`font-semibold ${isCondition ? 'text-amber-600' : 'text-ink'}`}>{value}</dd>
+              </div>
+            );
+          })}
         </dl>
 
         {item.status === 'to_buy' && (
@@ -109,6 +119,21 @@ export function ItemDetailPage() {
           <ActionButton emoji="🗑️" label="מחיקה" danger onClick={() => setConfirmDelete(true)} />
         </div>
       </main>
+
+      <Modal open={conditionOpen} onClose={() => setConditionOpen(false)} title="מה מצב הבגד? 🧵">
+        <ConditionPicker
+          value={item.condition}
+          onChange={(c) => {
+            void updateItem(item.id, { condition: c });
+          }}
+        />
+        <button
+          onClick={() => setConditionOpen(false)}
+          className="mt-4 w-full rounded-2xl bg-amber-500 py-3 font-semibold text-white active:scale-[0.98]"
+        >
+          סגירה
+        </button>
+      </Modal>
 
       <Modal open={statusOpen} onClose={() => setStatusOpen(false)} title="לאן עבר הפריט?">
         <div className="space-y-2">

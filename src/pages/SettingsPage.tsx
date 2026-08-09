@@ -60,7 +60,7 @@ export function SettingsPage() {
   };
 
   const exportCsv = () => {
-    const header = ['שם', 'תיאור', 'ילד/ה', 'מידה', 'עונה', 'קטגוריה', 'סוג', 'חנות/יצרן', 'מיקום', 'מחיר', 'שנה', 'כמות', 'סטטוס'];
+    const header = ['שם', 'תיאור', 'ילד/ה', 'מידה', 'עונה', 'קטגוריה', 'סוג', 'חנות/יצרן', 'מיקום', 'מחיר', 'שנה', 'כמות', 'סטטוס', 'מצב'];
     const lines = items.map((i) => {
       const child = children.find((c) => c.id === i.child_id)?.name ?? 'כללי';
       const cat = categories.find((c) => c.id === i.category_id)?.name ?? '';
@@ -68,6 +68,7 @@ export function SettingsPage() {
       return [
         i.name, i.description ?? '', child, i.size_label ?? '', SEASONS[i.season].label,
         cat, type, i.store ?? '', i.location ?? '', i.price ?? '', i.year ?? '', i.quantity, STATUSES[i.status].label,
+        i.condition ?? '',
       ]
         .map((v) => `"${String(v).replaceAll('"', '""')}"`)
         .join(',');

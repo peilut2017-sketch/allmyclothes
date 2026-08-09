@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { SEASONS, SEASON_ORDER } from '../lib/constants';
+import { ConditionPicker } from '../components/ConditionPicker';
+import { conditionLabel, SEASONS, SEASON_ORDER } from '../lib/constants';
 import type { Item, Season } from '../lib/types';
 
 type Decision = 'keep' | 'transfer' | 'outgrown';
@@ -19,6 +20,7 @@ export function SeasonSwapPage() {
   const [queue, setQueue] = useState<Item[] | null>(null);
   const [index, setIndex] = useState(0);
   const [transferFor, setTransferFor] = useState<Item | null>(null);
+  const [conditionFor, setConditionFor] = useState<{ item: Item; decision: Decision } | null>(null);
   const [summary, setSummary] = useState({ keep: 0, transfer: 0, outgrown: 0 });
 
   const candidates = useMemo(
@@ -50,14 +52,25 @@ export function SeasonSwapPage() {
     } else if (decision === 'transfer') {
       setTransferFor(item);
     } else {
-      advance('keep');
+      // הבגד נשאר – הזדמנות לעדכן את דירוג המצב שלו
+      setConditionFor({ item, decision: 'keep' });
     }
   };
 
   const doTransfer = (item: Item, childId: string | null) => {
     void updateItem(item.id, { child_id: childId, status: 'active' });
     setTransferFor(null);
-    advance('transfer');
+    setConditionFor({ item, decision: 'transfer' });
+  };
+
+  const finishCondition = (condition: number | null) => {
+    if (!conditionFor) return;
+    if (condition !== null && condition !== conditionFor.item.condition) {
+      void updateItem(conditionFor.item.id, { condition });
+    }
+    const decision = conditionFor.decision;
+    setConditionFor(null);
+    advance(decision);
   };
 
   // ---------- מסך סיכום ----------
@@ -123,6 +136,7 @@ export function SeasonSwapPage() {
                 {item.size_label && ` · מידה ${item.size_label}`}
                 {' · '}
                 {SEASONS[item.season].emoji} {SEASONS[item.season].label}
+                {item.condition != null && ` · 🧵 ${item.condition}/10`}
               </div>
             </div>
           </div>
@@ -141,6 +155,31 @@ export function SeasonSwapPage() {
             <SwapButton emoji="✅" label="נשאר" color="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" onClick={() => decide(item, 'keep')} />
           </div>
         </footer>
+
+        {conditionFor && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => finishCondition(null)} />
+            <div className="relative z-10 w-full rounded-t-3xl bg-card p-5 pb-8 shadow-sheet sm:max-w-md sm:rounded-3xl">
+              <h2 className="mb-1 text-lg font-bold text-ink">מה מצב הבגד? 🧵</h2>
+              <p className="mb-3 text-sm text-gray-500">
+                {conditionFor.item.condition != null
+                  ? `דורג לאחרונה: ${conditionFor.item.condition}/10 · ${conditionLabel(conditionFor.item.condition)}`
+                  : 'עוד לא דורג – לחיצה על מספר שומרת וממשיכה'}
+              </p>
+              <ConditionPicker
+                value={conditionFor.item.condition}
+                onChange={(c) => finishCondition(c)}
+                allowClear={false}
+              />
+              <button
+                onClick={() => finishCondition(null)}
+                className="mt-4 w-full rounded-2xl bg-gray-100 py-3 font-semibold text-gray-600 active:scale-[0.98]"
+              >
+                דילוג – בלי לעדכן
+              </button>
+            </div>
+          </div>
+        )}
 
         {transferFor && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
