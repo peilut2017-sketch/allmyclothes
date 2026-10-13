@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ארון המשפחה – סרטון תדמית</title>
+<style>
+  @font-face { font-family: Heebo; font-weight: 500; src: url(fonts/heebo-500.ttf); }
+  @font-face { font-family: Heebo; font-weight: 800; src: url(fonts/heebo-800.ttf); }
+  @font-face { font-family: Heebo; font-weight: 900; src: url(fonts/heebo-900.ttf); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 540px; height: 960px; overflow: hidden; font-family: Heebo, sans-serif; color: #2d2a26;
+           background: linear-gradient(180deg, #fbf7f0 0%, #fde7c0 100%); }
+  .abs { position: absolute; transform-origin: center center; }
+  .scene { position: absolute; left: 0; top: 0; width: 540px; height: 960px; overflow: hidden; display: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(30px); opacity: .55; }
+  svg { display: block; overflow: visible; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+/* ============================================================
+   סרטון תדמית – "ארון המשפחה"
+   כל הפריים הוא פונקציה טהורה של הזמן: renderAt(t)
+   ============================================================ */
+const W = 540, H = 960, FPS = 30;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+const easeIn = x => x * x;
+const easeInOut = x => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const back = x => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+let _seed = 7; const rnd = () => (_seed = (_seed * 16807) % 2147483647) / 2147483647;
+
+const stage = document.getElementById('stage');
+function mk(parent, cls, html, css) {
+  const d = document.createElement('div');
+  d.className = 'abs ' + (cls || '');
+  if (html) d.innerHTML = html;
+  const UNITLESS = ['lineHeight', 'fontWeight', 'zIndex', 'opacity', 'flex'];
+  if (css) for (const k in css) d.style[k] = typeof css[k] === 'number' && !UNITLESS.includes(k) ? css[k] + 'px' : css[k];
+  parent.appendChild(d);
+  return d;
+}
+function tf(el, { x = 0, y = 0, s = 1, sx, sy, r = 0, o = 1 } = {}) {
+  el.style.transform = `translate(${x}px,${y}px) rotate(${r}deg) scale(${sx ?? s},${sy ?? s})`;
+  el.style.opacity = o;
+  el.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+}
+/** pop-in with overshoot: returns {s,o} */
+function pop(t, a, d = 0.45) { const p = P(t, a, a + d); return { s: Math.max(0.0001, back(p)), o: clamp(p * 3) }; }
+
+/* ---------- אירועי סאונד (מקור אמת יחיד גם לאודיו) ---------- */
+const EV = [];
+const ev = (t, type, v = 1, p = 0) => EV.push({ t, type, v, p });
+
+/* ---------- טקסט מונפש מילה-מילה ---------- */
+function words(parent, text, { top, size = 38, color = '#2d2a26', left = 30, width = 480, weight = 900, hl = '#f59e0b', lh = 1.15 }) {
+  const el = mk(parent, '', '', { left, top, width, textAlign: 'center', fontSize: size, fontWeight: weight, lineHeight: lh, color });
+  const spans = [];
+  let h = false;
+  text.split(' ').forEach((tok, i, arr) => {
+    if (tok.startsWith('*')) h = true;
+    const clean = tok.replaceAll('*', '');
+    const sp = document.createElement('span');
+    sp.style.cssText = `display:inline-block;color:${h ? hl : color}`;
+    sp.textContent = clean;
+    if (tok.endsWith('*')) h = false;
+    el.appendChild(sp);
+    if (i < arr.length - 1) el.appendChild(document.createTextNode(' '));
+    spans.push(sp);
+  });
+  return { el, spans };
+}
+function reveal(w, t, start, gap = 0.1, dur = 0.4) {
+  w.spans.forEach((sp, i) => {
+    const p = back(P(t, start + i * gap, start + i * gap + dur));
+    tf(sp, { y: (1 - p) * 26, s: lerp(.8, 1, clamp(p)), o: clamp(p * 2) });
+  });
+}
+
+/* ---------- איורי בגדים (SVG) ---------- */
+const SHAPES = {
+  shirt: 'M30 12 L10 26 L20 42 L30 36 L30 88 L70 88 L70 36 L80 42 L90 26 L70 12 Q50 24 30 12 Z',
+  sweater: 'M30 12 L6 62 L20 68 L32 42 L32 88 L68 88 L68 42 L80 68 L94 62 L70 12 Q50 24 30 12 Z',
+  pants: 'M28 10 H72 L76 92 H56 L50 40 L44 92 H24 Z',
+  dress: 'M38 8 L44 8 Q50 18 56 8 L62 8 L66 38 L84 92 H16 L34 38 Z',
+  sock: 'M34 8 H60 V52 L80 70 Q88 84 74 90 Q62 94 52 82 L34 64 Z',
+  hat: 'M20 66 Q20 22 50 20 Q80 22 80 66 Z',
+};
+const DECOR = {
+  shirt: '<path d="M40 13 Q50 25 60 13" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2.5"/><rect x="30" y="52" width="40" height="6" fill="rgba(255,255,255,.55)"/><rect x="30" y="66" width="40" height="6" fill="rgba(255,255,255,.55)"/>',
+  sweater: '<path d="M40 13 Q50 25 60 13" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2.5"/><rect x="32" y="76" width="36" height="12" fill="rgba(0,0,0,.12)"/>',
+  pants: '<rect x="28" y="10" width="44" height="7" fill="rgba(0,0,0,.2)"/><path d="M50 17 V40" stroke="rgba(0,0,0,.2)" stroke-width="2"/>',
+  dress: '<rect x="35" y="36" width="30" height="5" fill="rgba(255,255,255,.6)"/><circle cx="50" cy="60" r="3" fill="rgba(255,255,255,.6)"/><circle cx="40" cy="74" r="3" fill="rgba(255,255,255,.6)"/><circle cx="60" cy="74" r="3" fill="rgba(255,255,255,.6)"/>',
+  sock: '<rect x="34" y="8" width="26" height="11" fill="rgba(255,255,255,.55)"/>',
+  hat: '<rect x="18" y="62" width="64" height="13" rx="5" fill="rgba(0,0,0,.18)"/><circle cx="50" cy="17" r="8" fill="#fff" stroke="rgba(0,0,0,.15)" stroke-width="2"/>',
+};
+function cloth(kind, color, extra = '') {
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%"><path d="${SHAPES[kind]}" fill="${color}" stroke="rgba(0,0,0,.18)" stroke-width="2" stroke-linejoin="round"/>${DECOR[kind]}${extra}</svg>`;
+}
+const COLORS = ['#0ea5e9', '#ec4899', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#84cc16'];
+const KINDS = ['shirt', 'dress', 'pants', 'sweater', 'sock', 'hat'];
+
+function parentSVG() {
+  return `<svg viewBox="0 0 150 170" width="150" height="170">
+    <path d="M20 170 Q22 118 75 112 Q128 118 130 170 Z" fill="#6c63ff"/>
+    <rect x="62" y="96" width="26" height="24" rx="10" fill="#f6c9a0"/>
+    <circle cx="75" cy="66" r="44" fill="#f6c9a0"/>
+    <path d="M30 62 Q32 16 75 18 Q120 16 120 62 Q108 36 75 38 Q44 36 30 62Z" fill="#4a3426"/>
+    <circle cx="58" cy="72" r="5" fill="#2d2a26"/><circle cx="92" cy="72" r="5" fill="#2d2a26"/>
+    <path class="brow" d="M46 65 L68 56" stroke="#2d2a26" stroke-width="4" stroke-linecap="round"/>
+    <path class="brow" d="M104 65 L82 56" stroke="#2d2a26" stroke-width="4" stroke-linecap="round"/>
+    <path class="sad" d="M62 98 Q75 88 88 98" fill="none" stroke="#2d2a26" stroke-width="4" stroke-linecap="round"/>
+    <path class="happy" d="M58 90 Q75 112 92 90 Z" fill="#fff" stroke="#2d2a26" stroke-width="4" stroke-linejoin="round" style="display:none"/>
+    <path class="sweat" d="M122 46 Q130 62 122 70 Q114 62 122 46Z" fill="#7ec8ff" stroke="#2d2a26" stroke-width="2"/>
+  </svg>`;
+}
+function kidSVG(id, skin = '#f6c9a0', hair = '#ff9f1c', pants = '#5b6cff') {
+  // מערכת צירים 100x200; הרגליים על y=190
+  return `<svg viewBox="0 0 100 200" width="100%" height="100%">
+    <g id="${id}-body">
+      <rect x="31" y="118" width="16" height="72" rx="6" fill="${pants}"/><rect x="53" y="118" width="16" height="72" rx="6" fill="${pants}"/>
+      <ellipse cx="38" cy="192" rx="12" ry="6" fill="#2d2a26"/><ellipse cx="62" cy="192" rx="12" ry="6" fill="#2d2a26"/>
+      <rect x="12" y="58" width="12" height="52" rx="6" fill="${skin}"/><rect x="76" y="58" width="12" height="52" rx="6" fill="${skin}"/>
+      <rect x="26" y="52" width="48" height="74" rx="12" fill="${skin}"/>
+      <rect x="44" y="40" width="12" height="16" rx="5" fill="${skin}"/>
+      <circle cx="50" cy="26" r="22" fill="${skin}"/>
+      <path d="M27 24 Q28 2 50 3 Q72 2 73 24 Q64 10 50 12 Q36 10 27 24Z" fill="${hair}"/>
+      <circle cx="42" cy="28" r="2.6" fill="#2d2a26"/><circle cx="58" cy="28" r="2.6" fill="#2d2a26"/>
+      <path d="M43 37 Q50 43 57 37" fill="none" stroke="#2d2a26" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+    <g id="${id}-shirt"><path d="${SHAPES.shirt}" fill="var(--shirt, #0ea5e9)" stroke="rgba(0,0,0,.2)" stroke-width="1.6" stroke-linejoin="round" transform="translate(0,34) scale(1,.92)"/></g>
+  </svg>`;
+}
+
+/* ---------- בועת מחשבה ---------- */
+function bubble(parent, text, { left, top, w, h, tail = 'right', size = 21 }) {
+  const el = mk(parent, '', `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#fff;border:3px solid #2d2a26;border-radius:30px;padding:8px 14px;font-size:${size}px;font-weight:800;text-align:center;line-height:1.2;box-shadow:0 6px 0 rgba(0,0,0,.08)">${text}</div>
+    <div style="position:absolute;${tail}:28px;bottom:-22px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #2d2a26"></div>
+    <div style="position:absolute;${tail}:12px;bottom:-40px;width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #2d2a26"></div>`,
+    { left, top, width: w, height: h });
+  el.style.transformOrigin = `${tail === 'right' ? '85%' : '15%'} 110%`; el.style.zIndex = '6';
+  return el;
+}
+
+function sparkle(parent, x, y, size = 26, color = '#f59e0b') {
+  return mk(parent, '', `<svg viewBox="0 0 40 40" width="${size}" height="${size}"><path d="M20 0 Q22 18 40 20 Q22 22 20 40 Q18 22 0 20 Q18 18 20 0Z" fill="${color}"/></svg>`,
+    { left: x - size / 2, top: y - size / 2, width: size, height: size });
+}
+
+/* ============================================================
+   מדידת זמן: תחילת כל סצנה
+   ============================================================ */
+const T = { s1: 0, s2: 5.5, s3: 10, s4: 15.5, s5: 24.5, s6: 29.5, s7: 35, s8: 39.5, end: 45 };
+const scenes = [];
+function addScene(start, end, build) {
+  const root = document.createElement('div');
+  root.className = 'scene';
+  stage.appendChild(root);
+  const o = build(root, start);
+  scenes.push({ start, end, root, update: o.update });
+  if (scenes.length > 1) ev(start - 0.4, 'whoosh', 0.8);
+}
+
+/* רקע חי */
+const blobs = [
+  [-60, 120, 260, '#ffd58a'], [360, 420, 300, '#ffc2d6'], [-40, 700, 280, '#bfe3ff'], [330, 820, 240, '#cdeccd'],
+].map(([x, y, s, c]) => { const b = document.createElement('div'); b.className = 'blob'; Object.assign(b.style, { left: x + 'px', top: y + 'px', width: s + 'px', height: s + 'px', background: c }); stage.appendChild(b); return { b, x, y }; });
+
+/* ============================================================
+   סצנה 1 – הבלגן (0–5.5)
+   ============================================================ */
+addScene(T.s1, T.s2, (root, t0) => {
+  const h1 = words(root, 'ארון הילדים שלכם...', { top: 36, size: 36 });
+  const h2 = words(root, '*בבלגן?*', { top: 84, size: 62, hl: '#ef4444' });
+  h1.el.style.zIndex = '7'; h2.el.style.zIndex = '7';
+  const par = mk(root, '', parentSVG(), { left: 195, top: 178, width: 150, height: 170, zIndex: '5' });
+  const happy = par.querySelector('.happy');
+  const bubbles = [
+    bubble(root, 'איפה הסוודר<br>הכחול?', { left: 14, top: 232, w: 165, h: 80, tail: 'right' }),
+    bubble(root, 'זה עוד מתאים<br>לה בכלל?', { left: 362, top: 214, w: 165, h: 80, tail: 'left' }),
+    bubble(root, 'רגע, כבר קנינו<br>כזה?!', { left: 290, top: 352, w: 200, h: 80, tail: 'left' }),
+  ];
+  const bt = [1.3, 2.4, 3.5];
+  bt.forEach(x => ev(t0 + x, 'pop', 0.8, 0));
+  // ערימה
+  const pile = [];
+  for (let i = 0; i < 16; i++) {
+    const kind = KINDS[i % KINDS.length], color = COLORS[(i * 3) % COLORS.length];
+    const sz = 92 + rnd() * 40;
+    const tx = 40 + rnd() * 370, ty = 520 + rnd() * 230;
+    const el = mk(root, '', cloth(kind, color), { left: tx, top: ty, width: sz, height: sz });
+    const ds = 0.3 + i * 0.17, rot = (rnd() - .5) * 140;
+    pile.push({ el, ds, rot, spin: (rnd() < .5 ? -1 : 1) * (120 + rnd() * 180) });
+    if (i % 2 === 0) ev(t0 + ds + 0.55, 'thud', 0.5 + rnd() * 0.3);
+  }
+  const qs = [0, 1, 2, 3, 4].map(i => mk(root, '', '?', { left: 40 + i * 85, top: 450, width: 50, height: 60, fontSize: 52, fontWeight: 900, color: '#ef4444', textAlign: 'center' }));
+  return {
+    update(t) {
+      reveal(h1, t, 0.15); reveal(h2, t, 0.6, 0.1);
+      tf(par, { y: Math.sin(t * 3) * 3, r: Math.sin(t * 2.2) * 2.5, o: clamp(P(t, 0, .3) * 2) });
+      par.querySelector('.sweat').style.opacity = clamp(P(t, 3.0, 3.3)) * (.7 + .3 * Math.sin(t * 6));
+      bubbles.forEach((b, i) => { const p = pop(t, bt[i], 0.45); tf(b, { s: p.s, o: p.o, y: Math.sin(t * 2 + i) * 3 }); });
+      pile.forEach(p => {
+        const q = P(t, p.ds, p.ds + 0.55);
+        let y = -760 * (1 - easeIn(q)), r = p.rot + (1 - q) * p.spin;
+        if (t > p.ds + 0.55) { const u = t - p.ds - 0.55; y -= Math.abs(Math.sin(u * 10)) * 26 * Math.exp(-u * 5); }
+        tf(p.el, { y, r, o: t > p.ds - 0.05 ? 1 : 0 });
+      });
+      qs.forEach((q, i) => { const s = pop(t, 2.2 + i * 0.25, .4); tf(q, { s: s.s, o: s.o * .9, y: -Math.abs(Math.sin(t * 3 + i)) * 14, r: Math.sin(t * 2 + i * 2) * 14 }); });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 2 – ארון המשפחה: סדר (5.5–10)
+   ============================================================ */
+addScene(T.s2, T.s3, (root, t0) => {
+  ev(t0 + 0.15, 'swell', 1);
+  const logo = mk(root, '', `<svg viewBox="0 0 110 110" width="110" height="110"><rect width="110" height="110" rx="28" fill="#f59e0b"/><g transform="translate(15,13) scale(.8)"><path d="${SHAPES.shirt}" fill="#fff"/><path d="M40 13 Q50 25 60 13" fill="none" stroke="#f59e0b" stroke-width="3"/></g></svg>`, { left: 215, top: 52, width: 110, height: 110 });
+  ev(t0 + 0.3, 'sparkle', 1);
+  const title = words(root, 'ארון המשפחה', { top: 176, size: 56 });
+  const sub = words(root, 'כל הבגדים. כל הילדים. *במקום אחד.*', { top: 252, size: 23, weight: 800, color: '#6b7280', lh: 1.25 });
+  const cards = [];
+  const kinds = ['shirt', 'dress', 'pants', 'sweater', 'sock', 'hat', 'dress', 'shirt', 'pants'];
+  const sizes = ['2-3', '4-5', '6-7', '3-4', '6-12 ח\'', '2-3', '5-6', '4-5', '8-9'];
+  const childColors = ['#ec4899', '#a855f7', '#0ea5e9'];
+  for (let i = 0; i < 9; i++) {
+    const c = i % 3, r = Math.floor(i / 3);
+    const left = 35 + c * 160, top = 340 + r * 168;
+    const el = mk(root, '', `<div style="position:absolute;inset:0;background:#fff;border-radius:22px;box-shadow:0 2px 4px rgba(0,0,0,.08),0 10px 22px rgba(0,0,0,.08);overflow:hidden">
+        <div style="position:absolute;left:30px;top:18px;width:80px;height:80px">${cloth(kinds[i], COLORS[(i * 2 + 1) % COLORS.length])}</div>
+        <div style="position:absolute;right:10px;bottom:16px;background:#f3f4f6;border-radius:8px;padding:2px 8px;font-size:15px;font-weight:800;color:#4b5563">${sizes[i]}</div>
+        <div style="position:absolute;left:0;right:0;bottom:0;height:8px;background:${childColors[(i + r) % 3]}"></div></div>`, { left, top, width: 140, height: 150 });
+    const ds = 1.3 + i * 0.16;
+    cards.push({ el, ds, from: { x: 270 - (left + 70), y: 800 - (top + 75) } });
+    ev(t0 + ds + 0.2, 'pop', 0.55, i);
+  }
+  const chips = ['👧 ילדים', '❄️ עונות', '📏 מידות', '📍 מיקום'].map((tx, i) => ({
+    el: mk(root, '', tx, { left: 22 + i * 125, top: 870, width: 115, height: 40, borderRadius: 20, background: '#2d2a26', color: '#fff', fontSize: 17, fontWeight: 800, textAlign: 'center', lineHeight: '40px' }), at: 3.2 + i * 0.22,
+  }));
+  chips.forEach(c => ev(t0 + c.at + .1, 'pop', 0.4, 4));
+  const sp = [[60, 120], [480, 100], [90, 300], [460, 290]].map(([x, y]) => sparkle(root, x, y, 28));
+  return {
+    update(t) {
+      const lp = pop(t, 0.2, 0.7); tf(logo, { s: lp.s, o: lp.o, r: (1 - clamp(lp.s)) * -40 + Math.sin(t * 3) * 2 });
+      reveal(title, t, 0.55, 0.14); reveal(sub, t, 1.0, 0.09);
+      cards.forEach(c => {
+        const p = P(t, c.ds, c.ds + 0.55), e = back(p);
+        tf(c.el, { x: c.from.x * (1 - easeOut(p)), y: c.from.y * (1 - easeOut(p)), s: lerp(.3, 1, clamp(e, 0, 1.1)), r: (1 - easeOut(p)) * 30, o: clamp(p * 4) });
+      });
+      chips.forEach(c => { const p = pop(t, c.at, .35); tf(c.el, { s: p.s, o: p.o }); });
+      sp.forEach((s, i) => { const q = (t * .9 + i * .3) % 1; tf(s, { s: .5 + Math.sin(q * Math.PI) * .8, r: q * 120, o: t > 0.5 ? Math.sin(q * Math.PI) : 0 }); });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 3 – צילום והוספה (10–15.5)
+   ============================================================ */
+addScene(T.s3, T.s4, (root, t0) => {
+  const h = words(root, 'צלמו. שמרו. *וזהו.*', { top: 34, size: 46 });
+  const phone = mk(root, '', '', { left: 130, top: 130, width: 280, height: 590, borderRadius: 40, background: '#1b1a18', boxShadow: '0 24px 50px rgba(0,0,0,.28)' });
+  const screen = mk(phone, '', '', { left: 10, top: 12, width: 260, height: 566, borderRadius: 30, background: '#faf7f2', overflow: 'hidden' });
+  // מצלמה
+  const cam = mk(screen, '', '', { left: 0, top: 0, width: 260, height: 566, background: 'linear-gradient(#3a3835,#1f1e1c)' });
+  const grid = mk(cam, '', '<div style="position:absolute;left:86px;top:0;width:1px;height:100%;background:rgba(255,255,255,.18)"></div><div style="position:absolute;left:172px;top:0;width:1px;height:100%;background:rgba(255,255,255,.18)"></div><div style="position:absolute;top:188px;left:0;width:100%;height:1px;background:rgba(255,255,255,.18)"></div><div style="position:absolute;top:376px;left:0;width:100%;height:1px;background:rgba(255,255,255,.18)"></div>', { inset: 0, left: 0, top: 0, width: 260, height: 566 });
+  const hanger = mk(cam, '', `<svg viewBox="0 0 200 200" width="200" height="200"><path d="M100 18 Q100 8 108 8 Q118 8 118 18 Q118 26 100 34 L24 76 Q16 82 24 86 L176 86 Q184 82 176 76 L100 34" fill="none" stroke="#bbb" stroke-width="4" stroke-linecap="round" transform="translate(0,-2)"/><g transform="translate(20,40) scale(1.6)">${cloth('shirt', '#0ea5e9').replace('<svg viewBox="0 0 100 100" width="100%" height="100%">', '').replace('</svg>', '')}</g></svg>`, { left: 30, top: 150, width: 200, height: 200 });
+  const br = [0, 1, 2, 3].map(i => mk(cam, '', `<div style="width:100%;height:100%;border:5px solid #fbbf24;border-radius:6px;${i < 2 ? 'border-bottom:none;' : 'border-top:none;'}${i % 2 === 0 ? 'border-right:none;' : 'border-left:none;'}"></div>`, { width: 34, height: 34 }));
+  const shutter = mk(cam, '', '<div style="width:100%;height:100%;border-radius:50%;background:#fff;border:5px solid #888;"></div>', { left: 100, top: 490, width: 60, height: 60 });
+  const flash = mk(screen, '', '', { left: 0, top: 0, width: 260, height: 566, background: '#fff' });
+  ev(t0 + 1.55, 'shutter', 1);
+  // טופס
+  const form = mk(screen, '', '', { left: 0, top: 0, width: 260, height: 566, background: '#faf7f2' });
+  mk(form, '', '<div style="font-size:19px;font-weight:900;text-align:right;padding:16px 18px 0">פריט חדש</div>', { left: 0, top: 0, width: 260, height: 40 });
+  const thumb = mk(screen, '', `<div style="width:100%;height:100%;border-radius:18px;background:#e0f2fe;padding:8px;box-shadow:0 4px 12px rgba(0,0,0,.15)">${cloth('shirt', '#0ea5e9')}</div>`, { left: 0, top: 0, width: 260, height: 260 });
+  const nameBox = mk(form, '', '<div style="width:100%;height:100%;border:2px solid #fbbf24;border-radius:14px;background:#fff;padding:0 12px;font-size:16px;font-weight:800;display:flex;align-items:center" id="nm"></div>', { left: 14, top: 72, width: 128, height: 44 });
+  mk(form, '', '<div style="font-size:12px;font-weight:800;color:#6b7280">שם הפריט</div>', { left: 14, top: 54, width: 128, height: 16, textAlign: 'right' });
+  const typeText = 'חולצת פסים';
+  mk(form, '', '<div style="font-size:12px;font-weight:800;color:#6b7280">שיוך</div>', { left: 14, top: 146, width: 232, height: 16, textAlign: 'right' });
+  const kidChips = [['🏠 כללי', 0], ['👧 נועה', 1], ['👦 איתי', 0]].map(([tx, act], i) => mk(form, '', tx, { left: 150 - i * 0 + (i === 0 ? 150 : i === 1 ? 80 : 10), top: 166, width: i === 0 ? 96 : 66, height: 34, borderRadius: 17, border: '2px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 800, textAlign: 'center', lineHeight: '30px', color: '#4b5563' }));
+  kidChips[0].style.left = '150px'; kidChips[1].style.left = '82px'; kidChips[2].style.left = '12px';
+  kidChips[0].style.width = '96px'; kidChips[1].style.width = '64px'; kidChips[2].style.width = '64px';
+  const kidActive = mk(form, '', '👧 נועה', { left: 82, top: 166, width: 64, height: 34, borderRadius: 17, background: '#ec4899', color: '#fff', fontSize: 13, fontWeight: 800, textAlign: 'center', lineHeight: '34px' });
+  mk(form, '', '<div style="font-size:12px;font-weight:800;color:#6b7280">עונה</div>', { left: 14, top: 222, width: 232, height: 16, textAlign: 'right' });
+  const seasons = ['❄️', '☀️', '🍂', '♾️'].map((e, i) => mk(form, '', e, { left: 14 + i * 59, top: 242, width: 52, height: 48, borderRadius: 14, border: '2px solid #e5e7eb', background: '#fff', fontSize: 24, textAlign: 'center', lineHeight: '44px' }));
+  const seasonAct = mk(form, '', '☀️', { left: 14 + 1 * 59, top: 242, width: 52, height: 48, borderRadius: 14, border: '2px solid #f59e0b', background: '#fffbeb', fontSize: 24, textAlign: 'center', lineHeight: '44px' });
+  // (בכיוון RTL הקיץ השני מימין; בסדר ויזואלי שמאל->ימין: 🍂 ☀️ ❄️... נשאר כפי שמצוין)
+  mk(form, '', '<div style="font-size:12px;font-weight:800;color:#6b7280">מידה</div>', { left: 150, top: 316, width: 96, height: 16, textAlign: 'right' });
+  mk(form, '', '<div style="font-size:12px;font-weight:800;color:#6b7280">מחיר</div>', { left: 14, top: 316, width: 96, height: 16, textAlign: 'right' });
+  const sizeBox = mk(form, '', '<div style="width:100%;height:100%;border:2px solid #e5e7eb;border-radius:14px;background:#fff;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center">3-4</div>', { left: 150, top: 336, width: 96, height: 44 });
+  const priceBox = mk(form, '', '<div style="width:100%;height:100%;border:2px solid #e5e7eb;border-radius:14px;background:#fff;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center">₪59</div>', { left: 14, top: 336, width: 96, height: 44 });
+  const addBtn = mk(form, '', '<span id="addtxt">הוספה לארון 🎉</span>', { left: 14, top: 470, width: 232, height: 56, borderRadius: 20, background: '#f59e0b', color: '#fff', fontSize: 19, fontWeight: 900, textAlign: 'center', lineHeight: '56px', boxShadow: '0 8px 18px rgba(245,158,11,.4)' });
+  const ripple = mk(form, '', '', { left: 110, top: 485, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,.7)' });
+  const cap = words(root, 'תמונה, מידה, עונה ומחיר – *בכמה לחיצות*', { top: 756, size: 26, weight: 800, lh: 1.25, color: '#4b5563' });
+  const sp = sparkle(root, 400, 700, 40);
+  const stamps = { name: 2.2, kid: 3.4, season: 3.8, size: 4.1, price: 4.4, btn: 4.7, tap: 5.0 };
+  ev(t0 + stamps.kid, 'pop', .5, 3); ev(t0 + stamps.season, 'pop', .5, 4); ev(t0 + stamps.size, 'pop', .5, 5); ev(t0 + stamps.price, 'pop', .5, 6);
+  ev(t0 + stamps.btn, 'pop', .5, 7); ev(t0 + stamps.tap, 'click', 1); ev(t0 + stamps.tap + .1, 'success', 1);
+  for (let i = 0; i < typeText.length; i++) ev(t0 + stamps.name + i * 0.075, 'tick', .5, i % 3);
+  return {
+    update(t) {
+      reveal(h, t, 0.1, 0.16); reveal(cap, t, 0.9, 0.08);
+      const pp = pop(t, 0.05, 0.6); tf(phone, { s: pp.s, o: pp.o, y: (1 - clamp(pp.s)) * 60 });
+      // מצלמה
+      const camO = 1 - P(t, 1.9, 2.2);
+      tf(cam, { o: camO });
+      const bp = easeOut(P(t, 0.3, 1.3)); const off = lerp(80, 0, bp);
+      const bx = 55 - off, by = 125 - off, bw = 150 + off * 2, bh = 250 + off * 2;
+      const pos = [[bx, by], [bx + bw - 34, by], [bx, by + bh - 34], [bx + bw - 34, by + bh - 34]];
+      br.forEach((b, i) => { b.style.left = pos[i][0] + 'px'; b.style.top = pos[i][1] + 'px'; b.style.opacity = P(t, 0.2, 0.5); });
+      tf(hanger, { y: Math.sin(t * 3) * 2, r: Math.sin(t * 2) * 1.5 });
+      tf(shutter, { s: t > 1.5 && t < 1.7 ? .85 : 1 });
+      const fl = t > 1.55 ? 1 - P(t, 1.55, 1.95) : 0; tf(flash, { o: fl * (t < 1.95 ? 1 : 0) });
+      tf(form, { o: P(t, 1.9, 2.3) });
+      // תמונה ממוזערת
+      const tp = easeInOut(P(t, 1.7, 2.6));
+      const tw = lerp(260, 84, tp), tx = lerp(0, 164, tp), ty = lerp(0, 52, tp);
+      thumb.style.width = tw + 'px'; thumb.style.height = tw + 'px'; thumb.style.left = tx + 'px'; thumb.style.top = ty + 'px';
+      thumb.style.opacity = P(t, 1.55, 1.75);
+      // הקלדה
+      const n = Math.floor(clamp((t - stamps.name) / 0.075, 0, typeText.length));
+      document.getElementById('nm').textContent = typeText.slice(0, n) + (n < typeText.length && t > stamps.name ? '|' : '');
+      kidChips.forEach(c => { c.style.opacity = P(t, 2.9, 3.2); });
+      const ka = pop(t, stamps.kid, .4); tf(kidActive, { s: ka.s, o: ka.o });
+      seasons.forEach(s => { s.style.opacity = P(t, 3.3, 3.6); });
+      const sa = pop(t, stamps.season, .4); tf(seasonAct, { s: sa.s, o: sa.o });
+      const zs = pop(t, stamps.size, .4); tf(sizeBox, { s: zs.s, o: zs.o });
+      const pz = pop(t, stamps.price, .4); tf(priceBox, { s: pz.s, o: pz.o });
+      const ab = pop(t, stamps.btn, .45);
+      const pressed = t > stamps.tap && t < stamps.tap + .15 ? .94 : 1;
+      tf(addBtn, { s: ab.s * pressed, o: ab.o });
+      const rp = P(t, stamps.tap, stamps.tap + .45); tf(ripple, { s: rp * 5, o: (1 - rp) * (t > stamps.tap ? 1 : 0) });
+      if (t > stamps.tap + .1) { addBtn.style.background = '#10b981'; document.getElementById('addtxt').textContent = 'נוסף לארון ✓'; }
+      const spp = pop(t, 5.0, .5); tf(sp, { s: spp.s, o: spp.o, r: t * 120 });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 4 – גזרה לצד המידה (15.5–24.5)
+   ============================================================ */
+addScene(T.s4, T.s5, (root, t0) => {
+  const h1 = words(root, 'המידה על התווית? *לא תמיד מדויקת*', { top: 36, size: 40, lh: 1.15 });
+  const h2 = words(root, 'אז הוספנו *גזרה* 📏', { top: 50, size: 50 });
+  const cols = [100, 270, 440], scl = [78, 108, 142], names = ['יצרן א׳', 'יצרן ב׳', 'יצרן ג׳'], clr = ['#ec4899', '#0ea5e9', '#10b981'];
+  const lbls = [];
+  const shirts = cols.map((cx, i) => {
+    const el = mk(root, '', `${cloth('shirt', clr[i])}
+      <div style="position:absolute;left:50%;top:44%;transform:translate(-50%,0) rotate(-6deg);background:#fff;border-radius:8px;border:2px solid #2d2a26;padding:1px 9px;font-size:${Math.max(15, scl[i] * .2)}px;font-weight:900;white-space:nowrap">3-4</div>`,
+      { left: cx - scl[i] / 2, top: 400 - scl[i] / 2, width: scl[i], height: scl[i] });
+    lbls.push(mk(root, '', names[i], { left: cx - 60, top: 480, width: 120, textAlign: 'center', fontSize: 18, fontWeight: 800, color: '#6b7280' }));
+    return el;
+  });
+  const par = mk(root, '', parentSVG(), { left: 195, top: 720, width: 150, height: 170 });
+  
+  const bub = bubble(root, 'אותה מידה...<br><b style="color:#ef4444">וכל יצרן מודד אחרת?!</b> 🤯', { left: 70, top: 580, w: 400, h: 96, tail: 'right', size: 24 });
+  ev(t0 + 1.4, 'pop', .8, 0);
+  // נקודות הגזרה
+  const fitsL = ['גזרה קטנה', 'במידה', 'גזרה גדולה'];
+  const dots = cols.map((cx, i) => {
+    const d = [0, 1, 2].map(k => `<span style="display:inline-block;width:${k === i ? 20 : 12}px;height:${k === i ? 20 : 12}px;border-radius:50%;background:${k === i ? '#f59e0b' : '#d1d5db'};margin:0 4px"></span>`).join('');
+    // שמאל->ימין: קטנה / במידה / גדולה (הצלעות מסודרות כך שהקבוצה הראשונה תואמת לקטן)
+    const el = mk(root, '', `<div dir="ltr" style="display:flex;align-items:center;justify-content:center;height:26px">${d}</div><div style="text-align:center;font-size:18px;font-weight:900;margin-top:4px;color:#b45309">${fitsL[i]}</div>`, { left: cx - 80, top: 515, width: 160, height: 60 });
+    ev(t0 + 4.5 + i * .4, 'ding', .7, i);
+    return el;
+  });
+  const rows = [
+    ['⏰', '*התראת ״בקרוב קטן״* מתחשבת בגזרה', 'chip1'],
+    ['💡', 'נזכר לפי *חנות / יצרן* – ומציע לבד', 'chip2'],
+  ].map(([ic, tx], i) => {
+    const el = mk(root, '', `<div style="display:flex;align-items:center;gap:14px;height:100%;padding:0 16px"><div style="font-size:34px">${ic}</div><div style="font-size:21px;font-weight:800;line-height:1.2">${tx.replace(/\*(.+?)\*/g, '<b style="color:#d97706">$1</b>')}</div></div>`,
+      { left: 30, top: 640 + i * 100, width: 480, height: 84, background: '#fff', borderRadius: 24, boxShadow: '0 2px 4px rgba(0,0,0,.08),0 12px 24px rgba(0,0,0,.1)' });
+    ev(t0 + 6.4 + i * .8, 'pop', .7, 2 + i);
+    return el;
+  });
+  const chip = mk(root, '', `<span dir="ltr" style="display:inline-flex;align-items:center;gap:7px">3-4 <span style="display:inline-flex;gap:3px"><i style="width:7px;height:7px;border-radius:50%;background:#f59e0b"></i><i style="width:7px;height:7px;border-radius:50%;background:#d1d5db"></i><i style="width:7px;height:7px;border-radius:50%;background:#d1d5db"></i></span></span>`, { left: 190, top: 590, width: 160, height: 36, borderRadius: 10, background: '#f3f4f6', fontSize: 19, fontWeight: 900, textAlign: 'center', lineHeight: '36px', color: '#4b5563' });
+  ev(t0 + 6.0, 'sparkle', .8);
+  const arrow = mk(root, '', '<svg viewBox="0 0 60 60" width="60" height="60"><path d="M30 6 V44 M14 30 L30 48 L46 30" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>', { left: 255, top: 596, width: 60, height: 60 });
+  return {
+    update(t) {
+      // כותרות
+      const h1o = 1 - P(t, 3.7, 4.0), h2o = P(t, 3.9, 4.0);
+      reveal(h1, t, 0.15, 0.09); h1.el.style.opacity = h1o; h1.el.style.visibility = h1o <= 0.01 ? 'hidden' : 'visible';
+      reveal(h2, t, 4.0, 0.12); h2.el.style.opacity = t > 3.95 ? 1 : 0;
+      // חולצות
+      shirts.forEach((s, i) => {
+        const p = pop(t, 0.9 + i * 0.35, .5);
+        const wob = t > 2.0 && t < 3.6 ? Math.sin((t - 2) * 7 + i) * 4 : 0;
+        const gl = t > 4.4 + i * .4 ? 1 + Math.sin((t - 4.4 - i * .4) * 5) * .03 : 1;
+        tf(s, { s: p.s * gl, o: p.o, r: wob });
+      });
+      lbls.forEach((l, i) => { const p = pop(t, 1.1 + i * .35, .4); tf(l, { s: p.s, o: p.o }); });
+      // אמא ובועה – יוצאות ב-3.7
+      const out = P(t, 3.5, 3.9);
+      const pp = pop(t, 0.8, .5); tf(par, { s: pp.s, o: pp.o * (1 - out), y: Math.sin(t * 3) * 3 + out * 40, r: Math.sin(t * 2) * 2 });
+      par.querySelector('.sweat').style.opacity = clamp(P(t, 2, 2.3));
+      const bp = pop(t, 1.4, .5); tf(bub, { s: bp.s, o: bp.o * (1 - out), y: Math.sin(t * 2) * 3 - out * 30 });
+      // נקודות
+      dots.forEach((d, i) => { const p = pop(t, 4.5 + i * .4, .4); tf(d, { s: p.s, o: p.o }); });
+      rows.forEach((r, i) => { const p = pop(t, 6.4 + i * .8, .5); tf(r, { s: lerp(.85, 1, clamp(p.s)), x: (1 - easeOut(P(t, 6.4 + i * .8, 6.9 + i * .8))) * 120, o: p.o }); });
+      const cp = pop(t, 6.0, .5); tf(chip, { s: cp.s * (t > 6.3 ? 1 + Math.sin((t - 6.3) * 6) * .02 : 1), o: cp.o * (t < 6.55 ? 1 : 0) });
+      tf(arrow, { y: Math.sin(t * 6) * 6, o: pop(t, 6.0, .4).o * (t < 6.55 ? 1 : 0) });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 5 – "בקרוב קטן" (24.5–29.5)
+   ============================================================ */
+addScene(T.s5, T.s6, (root, t0) => {
+  const h = words(root, 'ומזהירים *לפני* שזה קורה', { top: 36, size: 42 });
+  // סרגל גובה
+  let ruler = '<div style="position:absolute;left:34px;top:0;width:3px;height:100%;background:#9ca3af"></div>';
+  for (let i = 0; i <= 10; i++) ruler += `<div style="position:absolute;left:${i % 5 === 0 ? 14 : 22}px;top:${i * 38}px;width:${i % 5 === 0 ? 22 : 14}px;height:3px;background:#9ca3af"></div>`;
+  mk(root, '', ruler, { left: 20, top: 330, width: 60, height: 380 });
+  // הילדה הגדולה
+  const kid = mk(root, '', kidSVG('k1', '#f6c9a0', '#ff9f1c'), { left: 90, top: 340, width: 150, height: 300 });
+  kid.style.transformOrigin = '50% 95%';
+  const kidShirt = kid.querySelector('#k1-shirt'), kidBody = kid.querySelector('#k1-body');
+  kid.style.setProperty('--shirt', '#0ea5e9');
+  const age = mk(root, '', '', { left: 90, top: 660, width: 150, textAlign: 'center', fontSize: 28, fontWeight: 900 });
+  const note = mk(root, '', `<div style="display:flex;align-items:center;gap:12px;padding:0 16px;height:100%"><div id="bell" style="font-size:38px">⏰</div><div><div style="font-size:19px;font-weight:900;color:#be123c">בקרוב קטן!</div><div style="font-size:16px;font-weight:700;color:#4b5563">החולצה של נועה · 3-4 · גזרה קטנה</div></div></div>`,
+    { left: 30, top: 150, width: 480, height: 82, background: '#fff', borderRadius: 24, boxShadow: '0 14px 30px rgba(0,0,0,.18)', border: '2px solid #fecdd3' });
+  ev(t0 + 2.5, 'notif', 1);
+  // אח קטן
+  const sib = mk(root, '', kidSVG('k2', '#f6c9a0', '#6b4226', '#10b981'), { left: 370, top: 480, width: 90, height: 180 });
+  const sibShirt = sib.querySelector('#k2-shirt');
+  sib.style.setProperty('--shirt', '#0ea5e9');
+  sibShirt.style.opacity = 0;
+  const sibCap = mk(root, '', '🎁 עוברת לאח הקטן', { left: 320, top: 672, width: 190, textAlign: 'center', fontSize: 21, fontWeight: 900, color: '#047857' });
+  const fly = mk(root, '', cloth('shirt', '#0ea5e9'), { left: 130, top: 400, width: 80, height: 80 });
+  ev(t0 + 3.2, 'whoosh', .7); ev(t0 + 3.85, 'sparkle', .9);
+  const sp = sparkle(root, 415, 470, 44, '#10b981');
+  const sp2 = sparkle(root, 450, 520, 28, '#f59e0b');
+  return {
+    update(t) {
+      reveal(h, t, 0.1, 0.1);
+      // גדילה
+      const g = easeInOut(P(t, 0.5, 2.7));
+      const s = lerp(.8, 1.1, g);
+      kid.style.opacity = pop(t, .1, .4).o;
+      kid.style.transform = `scale(${s})`;
+      const k = 0.98 / s; // החולצה לא גדלה – הילדה כן
+      const tight = P(t, 1.5, 2.4);
+      kidShirt.setAttribute('transform', `translate(${50 * (1 - k)},${44 * (1 - k)}) scale(${k})`);
+      const nk = 1.2 * k * (0.7 + 0.3 * back(P(t, 4.0, 4.4)));
+      if (t >= 4.0) kidShirt.setAttribute('transform', `translate(${50 * (1 - nk)},${44 * (1 - nk)}) scale(${nk})`);
+      kidShirt.style.opacity = t < 3.2 ? 1 : (t >= 4.0 ? P(t, 4.0, 4.2) : 0);
+      kid.style.setProperty('--shirt', t >= 4.0 ? '#a855f7' : tight < .5 ? '#0ea5e9' : (tight < 1 ? '#f59e0b' : '#ef4444'));
+      if (t > 2.5 && t < 3.2) kid.style.transform = `scale(${s}) translateX(${Math.sin(t * 40) * 2}px)`;
+      const months = Math.round(lerp(30, 42, g));
+      age.textContent = `גיל ${(months / 12).toFixed(1).replace('.0', '')}`;
+      age.style.opacity = pop(t, .3, .3).o; age.style.color = tight >= 1 ? '#ef4444' : '#2d2a26';
+      // התראה
+      const np = easeOut(P(t, 2.5, 2.9));
+      tf(note, { y: (1 - np) * -160, o: np * (t < 3.4 ? 1 : 1 - P(t, 3.4, 3.7)) });
+      document.getElementById('bell').style.transform = `rotate(${t > 2.6 && t < 3.4 ? Math.sin((t - 2.6) * 30) * 18 : 0}deg)`;
+      // מעבר חולצה
+      const fp = P(t, 3.2, 3.85), fe = easeInOut(fp);
+      tf(fly, { x: lerp(0, 255, fe), y: lerp(0, 90, fe) - Math.sin(fe * Math.PI) * 130, s: lerp(1, .56, fe), r: fe * 360, o: t >= 3.2 && t < 3.85 ? 1 : 0 });
+      sibShirt.style.opacity = t >= 3.85 ? 1 : 0;
+      const sc = pop(t, 3.85, .5); tf(sibCap, { s: sc.s, o: sc.o });
+      tf(sp, { s: sc.s * (.8 + Math.sin(t * 8) * .2), o: t >= 3.85 ? 1 : 0, r: t * 100 });
+      tf(sp2, { s: sc.s * (.8 + Math.cos(t * 8) * .2), o: t >= 3.85 ? 1 : 0, r: -t * 100 });
+      tf(sib, { y: t >= 3.85 ? -Math.abs(Math.sin((t - 3.85) * 8)) * 14 * Math.exp(-(t - 3.85) * 1.2) : 0, o: pop(t, .6, .4).o });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 6 – עוד פיצ'רים (29.5–35)
+   ============================================================ */
+addScene(T.s6, T.s7, (root, t0) => {
+  const h = words(root, 'ועוד הרבה דברים *שמקלים* על החיים', { top: 34, size: 38 });
+  const defs = [
+    { title: '🔄 החלפת עונה', text: 'החלטה מהירה, פריט אחרי פריט', at: 0.6 },
+    { title: '🛒 רשימת קניות', text: 'מה חסר – ישר לווטסאפ', at: 1.5 },
+    { title: '👨‍👩‍👧 ארון משותף', text: 'שני הורים, ארון אחד', at: 2.4 },
+    { title: '🧵 מצב הבגד', text: 'דירוג 1–10 ועד 4 תמונות', at: 3.3 },
+  ];
+  const pos = [[285, 170], [30, 170], [285, 470], [30, 470]]; // RTL: הראשון בימין
+  const art = [
+    // החלפת עונה
+    () => `<div id="swapShirt" style="position:absolute;left:78px;top:14px;width:64px;height:64px">${cloth('shirt', '#0ea5e9')}</div>
+           <div style="position:absolute;left:12px;top:92px;display:flex;gap:6px;width:196px;direction:rtl">${['נשאר', 'לאח', 'קטן'].map((x, i) => `<div class="swb" style="flex:1;height:30px;border-radius:15px;background:${['#d1fae5', '#e0e7ff', '#ffe4e6'][i]};font-size:13px;font-weight:800;text-align:center;line-height:30px">${x}</div>`).join('')}</div>`,
+    // רשימת קניות
+    () => [0, 1, 2].map(i => `<div style="position:absolute;left:18px;right:18px;top:${10 + i * 40}px;height:32px;display:flex;align-items:center;gap:10px;direction:rtl"><div class="cb" style="width:26px;height:26px;border-radius:8px;border:3px solid #d1d5db;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;font-weight:900"></div><div style="flex:1;height:12px;border-radius:6px;background:#e5e7eb"></div><div style="font-size:13px;font-weight:800;color:#9ca3af">₪${[39, 59, 25][i]}</div></div>`).join(''),
+    // ארון משותף
+    () => `<div style="position:absolute;left:18px;top:16px;width:56px;height:56px;border-radius:50%;background:#c7d2fe;text-align:center;line-height:56px;font-size:30px">👩</div>
+           <div style="position:absolute;right:18px;top:16px;width:56px;height:56px;border-radius:50%;background:#fbcfe8;text-align:center;line-height:56px;font-size:30px">👨</div>
+           <div style="position:absolute;left:78px;top:42px;width:64px;height:4px;background:#d1d5db;border-radius:2px"></div>
+           <div id="pulse" style="position:absolute;left:74px;top:36px;width:16px;height:16px;border-radius:50%;background:#f59e0b"></div>
+           <div style="position:absolute;left:50px;top:86px;width:120px;height:34px;border-radius:12px;background:#fef3c7;font-size:17px;font-weight:900;text-align:center;line-height:34px;color:#92400e;letter-spacing:2px">KX-4Q7</div>`,
+    // מצב הבגד
+    () => `<div dir="ltr" style="position:absolute;left:12px;top:22px;display:flex;gap:4px;width:196px">${Array.from({ length: 10 }, (_, i) => `<div class="cbar" style="flex:1;height:34px;border-radius:7px;background:#e5e7eb"></div>`).join('')}</div>
+           <div id="condTxt" style="position:absolute;left:0;right:0;top:72px;text-align:center;font-size:20px;font-weight:900;color:#059669">8/10 · כמו חדש</div>`,
+  ];
+  const cards = defs.map((d, i) => {
+    const el = mk(root, '', `<div style="position:absolute;inset:0;background:#fff;border-radius:26px;box-shadow:0 2px 4px rgba(0,0,0,.08),0 14px 28px rgba(0,0,0,.1)"></div>
+      <div style="position:absolute;left:0;top:14px;width:100%;height:130px">${art[i]()}</div>
+      <div style="position:absolute;left:0;right:0;top:160px;text-align:center;font-size:21px;font-weight:900">${d.title}</div>
+      <div style="position:absolute;left:10px;right:10px;top:196px;text-align:center;font-size:15px;font-weight:700;color:#6b7280;line-height:1.25">${d.text}</div>`,
+      { left: pos[i][0], top: pos[i][1], width: 225, height: 270 });
+    ev(t0 + d.at + .05, 'pop', .7, i + 1);
+    return el;
+  });
+  const small = ['🌙 מצב כהה', '📸 עד 4 תמונות', '💾 גיבוי CSV', '📱 מותקן כמו אפליקציה'].map((x, i) => mk(root, '', x, { left: [30, 290, 30, 230][i] - 0, top: 790 + (i > 1 ? 56 : 0), width: [250, 220, 190, 280][i], height: 42, borderRadius: 21, background: '#2d2a26', color: '#fff', fontSize: 17, fontWeight: 800, textAlign: 'center', lineHeight: '42px' }));
+  small[0].style.left = '280px'; small[1].style.left = '70px'; small[0].style.width = '230px'; small[1].style.width = '200px';
+  small[2].style.left = '320px'; small[2].style.width = '190px'; small[3].style.left = '20px'; small[3].style.width = '280px';
+  small.forEach((s, i) => ev(t0 + 4.0 + i * .3, 'pop', .4, 4 + i));
+  return {
+    update(t) {
+      reveal(h, t, 0.1, 0.09);
+      cards.forEach((c, i) => {
+        const p = pop(t, defs[i].at, .5); tf(c, { s: p.s, o: p.o, y: (1 - clamp(p.s)) * 80 + Math.sin(t * 2 + i) * 3 });
+        const lt = t - defs[i].at;
+        if (i === 0) {
+          const sh = c.querySelector('#swapShirt'); const q = (lt % 2) / 2;
+          tf(sh, { x: q < .5 ? 0 : 0, y: Math.sin(q * Math.PI * 2) * 4 });
+          c.querySelectorAll('.swb').forEach((b, k) => { b.style.transform = `scale(${Math.floor(lt / .7) % 3 === k ? 1.12 : 1})`; b.style.outline = Math.floor(lt / .7) % 3 === k ? '3px solid #f59e0b' : 'none'; });
+        }
+        if (i === 1) c.querySelectorAll('.cb').forEach((b, k) => { const on = lt > .5 + k * .5; b.style.background = on ? '#10b981' : '#fff'; b.style.borderColor = on ? '#10b981' : '#d1d5db'; b.textContent = on ? '✓' : ''; if (on && lt < .6 + k * .5) b.style.transform = 'scale(1.3)'; else b.style.transform = 'scale(1)'; });
+        if (i === 2) { const q = (lt * .9) % 1; c.querySelector('#pulse').style.left = (74 + (q < .5 ? q * 2 : 2 - q * 2) * 50) + 'px'; }
+        if (i === 3) c.querySelectorAll('.cbar').forEach((b, k) => { const on = k < Math.floor(clamp(lt / 0.9, 0, 1) * 8 + .001); b.style.background = on ? (k >= 7 ? '#10b981' : k >= 4 ? '#34d399' : '#f59e0b') : '#e5e7eb'; });
+      });
+      small.forEach((s, i) => { const p = pop(t, 4.0 + i * .3, .35); tf(s, { s: p.s, o: p.o }); });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 7 – מה מרוויחים (35–39.5)
+   ============================================================ */
+addScene(T.s7, T.s8, (root, t0) => {
+  const h = words(root, 'מה *מרוויחים?*', { top: 34, size: 56 });
+  const items = [
+    ['🛍️', 'לא קונים *פעמיים* אותו בגד'],
+    ['🔎', 'יודעים מה *מתאים עכשיו* לכל ילד'],
+    ['🎁', 'בגדים *ממשיכים הלאה* לאח או לאחות'],
+    ['😌', 'פחות בלגן, יותר *שקט* בבוקר'],
+  ];
+  const rows = items.map(([ic, tx], i) => {
+    const el = mk(root, '', `<div style="display:flex;align-items:center;gap:14px;height:100%;padding:0 14px">
+      <div style="width:50px;height:50px;border-radius:50%;background:#fff7e0;display:flex;align-items:center;justify-content:center;font-size:28px;flex:none">${ic}</div>
+      <div style="font-size:21px;font-weight:800;line-height:1.2;flex:1">${tx.replace(/\*(.+?)\*/g, '<b style="color:#d97706">$1</b>')}</div>
+      <svg viewBox="0 0 40 40" width="38" height="38" style="flex:none"><circle cx="20" cy="20" r="18" fill="#10b981"/><path class="ck" d="M11 21 L18 28 L30 13" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="40" stroke-dashoffset="40"/></svg></div>`,
+      { left: 30, top: 130 + i * 98, width: 480, height: 82, background: '#fff', borderRadius: 24, boxShadow: '0 2px 4px rgba(0,0,0,.08),0 12px 24px rgba(0,0,0,.09)' });
+    ev(t0 + 0.6 + i * 0.7, 'pop', .5, i); ev(t0 + 0.9 + i * 0.7, 'check', .9, i);
+    return el;
+  });
+  // מוט קולבים מתנדנדים
+  const rod = mk(root, '', '', { left: 30, top: 600, width: 480, height: 6, borderRadius: 3, background: '#9a7b4f' });
+  const hang = [];
+  for (let i = 0; i < 6; i++) {
+    const cx = 75 + i * 78;
+    const el = mk(root, '', `<div style="position:absolute;left:50%;top:0;width:3px;height:22px;background:#9ca3af;transform:translateX(-50%)"></div><div style="position:absolute;left:5px;top:22px;width:80px;height:80px">${cloth(KINDS[i], COLORS[(i * 3 + 1) % COLORS.length])}</div>`,
+      { left: cx - 45, top: 602, width: 90, height: 110 });
+    el.style.transformOrigin = '50% 0%';
+    hang.push(el);
+  }
+  const par = mk(root, '', parentSVG(), { left: 120, top: 770, width: 150, height: 170 });
+  par.querySelector('.sad').style.display = 'none'; par.querySelector('.happy').style.display = 'block';
+  par.querySelector('.sweat').style.display = 'none';
+  const bro = par.querySelectorAll('.brow'); bro[0].setAttribute('d', 'M46 56 L68 56'); bro[1].setAttribute('d', 'M104 56 L82 56');
+  const tb = bubble(root, 'סוף סוף... <b style="color:#d97706">הכול במקום</b> 😌', { left: 270, top: 745, w: 240, h: 84, tail: 'left', size: 22 });
+  ev(t0 + 3.2, 'pop', .7, 3); ev(t0 + 3.8, 'pop', .7, 5);
+  return {
+    update(t) {
+      reveal(h, t, 0.05, 0.14);
+      rows.forEach((r, i) => {
+        const a = 0.6 + i * 0.7, p = pop(t, a, .5);
+        tf(r, { s: lerp(.9, 1, clamp(p.s)), x: (1 - easeOut(P(t, a, a + .45))) * 140, o: p.o });
+        r.querySelector('.ck').style.strokeDashoffset = 40 * (1 - easeOut(P(t, a + .3, a + .7)));
+      });
+      const rp = pop(t, 2.8, .5); tf(rod, { sx: clamp(rp.s), o: rp.o });
+      hang.forEach((hg, i) => { const p = pop(t, 3.0 + i * .08, .4); tf(hg, { s: p.s, o: p.o, r: Math.sin(t * 2.6 + i * .9) * 5 * p.o }); });
+      const pq = pop(t, 3.2, .5); tf(par, { s: pq.s, o: pq.o, y: Math.sin(t * 3) * 3 });
+      const tq = pop(t, 3.8, .5); tf(tb, { s: tq.s, o: tq.o, y: Math.sin(t * 2) * 3 });
+    },
+  };
+});
+
+/* ============================================================
+   סצנה 8 – הרשמה (39.5–45)
+   ============================================================ */
+addScene(T.s8, T.end + 1, (root, t0) => {
+  ev(t0 + 0.1, 'fanfare', 1);
+  const logo = mk(root, '', `<svg viewBox="0 0 110 110" width="130" height="130"><rect width="110" height="110" rx="28" fill="#f59e0b"/><g transform="translate(15,13) scale(.8)"><path d="${SHAPES.shirt}" fill="#fff"/><path d="M40 13 Q50 25 60 13" fill="none" stroke="#f59e0b" stroke-width="3"/></g></svg>`, { left: 205, top: 120, width: 130, height: 130 });
+  const title = words(root, 'ארון המשפחה', { top: 276, size: 60 });
+  const sub = words(root, 'הכניסו סדר בארון הילדים – *עוד היום*', { top: 360, size: 30, weight: 800, lh: 1.25 });
+  const btn = mk(root, '', '<span id="ctaTxt">הירשמו עכשיו 🎉</span>', { left: 60, top: 520, width: 420, height: 92, borderRadius: 30, background: '#f59e0b', color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center', lineHeight: '92px', boxShadow: '0 14px 34px rgba(245,158,11,.5)' });
+  const ring = mk(root, '', '', { left: 60, top: 520, width: 420, height: 92, borderRadius: 30, border: '4px solid #f59e0b' });
+  const cursor = mk(root, '', '<svg viewBox="0 0 40 48" width="56" height="66"><path d="M8 4 L8 34 L16 28 L22 42 L28 39 L22 26 L33 26 Z" fill="#fff" stroke="#2d2a26" stroke-width="3" stroke-linejoin="round"/></svg>', { left: 440, top: 760, width: 56, height: 66 });
+  const rip = mk(root, '', '', { left: 250, top: 546, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,.75)' });
+  ev(t0 + 2.6, 'click', 1); ev(t0 + 2.7, 'success', 1);
+  const feats = ['📸 צילום והוספה', '📏 גזרה ומידה', '⏰ התראות', '🛒 קניות'].map((x, i) => mk(root, '', x, { left: [275, 25, 275, 25][i], top: 680 + (i > 1 ? 54 : 0), width: 240, height: 42, borderRadius: 21, background: '#fff', border: '2px solid #fde68a', fontSize: 18, fontWeight: 800, textAlign: 'center', lineHeight: '38px' }));
+  feats.forEach((f, i) => ev(t0 + 1.4 + i * .18, 'pop', .35, 4 + i));
+  const tag = words(root, 'פשוט. מהיר. *בעברית מלאה.*', { top: 830, size: 28, weight: 800, color: '#6b7280' });
+  // קונפטי
+  const conf = [];
+  for (let i = 0; i < 46; i++) {
+    const isCloth = i % 3 === 0;
+    const sz = isCloth ? 34 + rnd() * 18 : 10 + rnd() * 10;
+    const el = mk(root, '', isCloth ? cloth(KINDS[i % KINDS.length], COLORS[i % COLORS.length]) : '', { left: rnd() * 520, top: -80, width: sz, height: isCloth ? sz : sz * .5, background: isCloth ? 'transparent' : COLORS[i % COLORS.length], borderRadius: isCloth ? 0 : 3 });
+    conf.push({ el, delay: .1 + rnd() * 1.4, speed: 260 + rnd() * 260, sway: 20 + rnd() * 40, ph: rnd() * 6, rot: (rnd() - .5) * 700 });
+  }
+  return {
+    update(t) {
+      const lp = pop(t, 0.3, .7); tf(logo, { s: lp.s * (t > 1 ? 1 + Math.sin(t * 4) * .02 : 1), o: lp.o, r: (1 - clamp(lp.s)) * -50 });
+      reveal(title, t, 0.7, .15); reveal(sub, t, 1.1, .09); reveal(tag, t, 2.2, .1);
+      const bp = pop(t, 1.0, .6);
+      const pulse = t > 1.8 && t < 2.6 ? 1 + Math.sin((t - 1.8) * 8) * .03 : 1;
+      const press = t > 2.55 && t < 2.75 ? .94 : 1;
+      tf(btn, { s: bp.s * pulse * press, o: bp.o });
+      const rg = (t * 1.2) % 1; tf(ring, { s: bp.s * (1 + rg * .25), o: bp.o * (1 - rg) * (t < 2.6 ? 1 : 0) });
+      const cp = easeInOut(P(t, 1.7, 2.55));
+      tf(cursor, { x: lerp(0, -200, cp), y: lerp(0, -200, cp) + (t > 2.55 && t < 2.75 ? 8 : 0), o: P(t, 1.5, 1.8) * (1 - P(t, 3.3, 3.6)) });
+      const rr = P(t, 2.6, 3.1); tf(rip, { s: rr * 9, o: (1 - rr) * (t > 2.6 ? 1 : 0) });
+      if (t > 2.7) { btn.style.background = '#10b981'; btn.style.boxShadow = '0 14px 34px rgba(16,185,129,.5)'; document.getElementById('ctaTxt').textContent = 'ברוכים הבאים! ✓'; }
+      feats.forEach((f, i) => { const p = pop(t, 1.4 + i * .18, .35); tf(f, { s: p.s, o: p.o }); });
+      conf.forEach(c => {
+        const u = t - c.delay;
+        if (u < 0) { c.el.style.visibility = 'hidden'; return; }
+        const y = -80 + u * c.speed;
+        tf(c.el, { x: Math.sin(u * 2 + c.ph) * c.sway, y, r: c.rot * u / 3, o: y < H + 80 ? 1 : 0 });
+      });
+    },
+  };
+});
+
+/* ---------- רינדור פריים ---------- */
+function renderAt(t) {
+  blobs.forEach((o, i) => { o.b.style.transform = `translate(${Math.sin(t * .5 + i) * 30}px,${Math.cos(t * .4 + i * 2) * 30}px)`; });
+  scenes.forEach((sc, i) => {
+    const a = sc.start, b = sc.end;
+    const vis = t >= a - 0.41 && t <= b + 0.11;
+    sc.root.style.display = vis ? 'block' : 'none';
+    if (!vis) return;
+    let x = 0;
+    if (i > 0 && t < a + 0.1) x = W * (1 - easeInOut(P(t, a - 0.4, a + 0.1)));
+    if (i < scenes.length - 1 && t > b - 0.4) x = -W * easeInOut(P(t, b - 0.4, b + 0.1));
+    sc.root.style.transform = `translateX(${x}px)`;
+    sc.update(t - a);
+  });
+}
+window.renderAt = renderAt;
+window.EVENTS = EV.sort((p, q) => p.t - q.t);
+window.DURATION = T.end;
+renderAt(0);
+</script>
+</body>
+</html>
