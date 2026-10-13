@@ -3,8 +3,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ImagePicker } from '../components/ImagePicker';
 import { ConditionPicker } from '../components/ConditionPicker';
-import { LOCATION_SUGGESTIONS, SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER, SIZE_SUGGESTIONS } from '../lib/constants';
-import type { ItemInput, ItemStatus, Season } from '../lib/types';
+import { FitPicker } from '../components/FitDots';
+import { LOCATION_SUGGESTIONS, SEASONS, SEASON_ORDER, SIZE_FITS, STATUSES, STATUS_ORDER, SIZE_SUGGESTIONS } from '../lib/constants';
+import type { ItemInput, ItemStatus, Season, SizeFit } from '../lib/types';
 
 export function ItemFormPage() {
   const { id } = useParams();
@@ -30,6 +31,7 @@ export function ItemFormPage() {
     type_id: source?.type_id ?? null,
     // בשכפול לא מעתיקים מידה ותמונות – בדרך כלל קונים אותו פריט במידה אחרת
     size_label: duplicateOf ? null : (source?.size_label ?? null),
+    size_fit: source?.size_fit ?? null,
     season: source?.season ?? 'all',
     store: source?.store ?? null,
     location: source?.location ?? null,
@@ -63,6 +65,27 @@ export function ItemFormPage() {
     const used = items.map((i) => i.size_label).filter((s): s is string => Boolean(s));
     return [...new Set([...SIZE_SUGGESTIONS, ...used])];
   }, [items]);
+
+  // זיכרון לפי יצרן: אם בפריטים קודמים מאותה חנות/יצרן סימנו גזרה, מציעים אותה
+  const storeFit = useMemo(() => {
+    const store = form.store?.trim().toLowerCase();
+    if (!store) return null;
+    const counts = new Map<number, number>();
+    for (const i of items) {
+      if (i.size_fit != null && i.store?.trim().toLowerCase() === store) {
+        counts.set(i.size_fit, (counts.get(i.size_fit) ?? 0) + 1);
+      }
+    }
+    let best: SizeFit | null = null;
+    let bestCount = 0;
+    for (const [fit, count] of counts) {
+      if (count > bestCount) {
+        best = fit as SizeFit;
+        bestCount = count;
+      }
+    }
+    return best;
+  }, [items, form.store]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -176,6 +199,19 @@ export function ItemFormPage() {
             </select>
           </Field>
         </div>
+
+        <Field label="איך הגזרה ביחס למידה? 📏">
+          <FitPicker value={form.size_fit} onChange={(v) => set('size_fit', v)} />
+          {form.size_fit == null && storeFit != null && (
+            <button
+              type="button"
+              onClick={() => set('size_fit', storeFit)}
+              className="mt-2 rounded-full bg-amber-50 dark:bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-200 active:scale-95"
+            >
+              💡 ב״{form.store}״ סימנתם בעבר ״{SIZE_FITS[String(storeFit) as keyof typeof SIZE_FITS].label}״ – להחיל?
+            </button>
+          )}
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field

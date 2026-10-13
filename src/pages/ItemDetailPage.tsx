@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { SeasonBadge, StatusBadge } from '../components/Badges';
 import { ConfirmDialog, Modal } from '../components/Modal';
 import { ConditionPicker } from '../components/ConditionPicker';
-import { conditionLabel, STATUSES, STATUS_ORDER } from '../lib/constants';
+import { conditionLabel, SIZE_FITS, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatDate, formatPrice } from '../lib/format';
 
 export function ItemDetailPage() {
@@ -35,6 +35,7 @@ export function ItemDetailPage() {
   const details: [string, string][] = [
     ['שיוך', child ? `${child.emoji} ${child.name}` : '🏠 כללי'],
     ['מידה / גיל', item.size_label ?? '—'],
+    ['📏 גזרה', item.size_fit != null ? SIZE_FITS[String(item.size_fit) as keyof typeof SIZE_FITS].label : '—'],
     ['🧵 מצב הבגד', item.condition != null ? `${item.condition}/10 · ${conditionLabel(item.condition)}` : 'לחצו לדירוג'],
     ['📍 מיקום אחסון', item.location ?? '—'],
     ['קטגוריה', category?.name ?? '—'],

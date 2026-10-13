@@ -112,6 +112,7 @@ create table if not exists public.items (
   category_id uuid references public.categories (id) on delete set null,
   type_id uuid references public.item_types (id) on delete set null,
   size_label text,                              -- מידה: "2-3", "104", "6-12 ח'" וכו'
+  size_fit int check (size_fit between -1 and 1),  -- גזרה: -1 קטנה מהמידה, 0 במידה, 1 גדולה מהמידה
   season text not null default 'all',           -- winter / summer / mid / all
   store text,                                   -- חנות / יצרן
   location text,                                -- מיקום אחסון: איזה ארון / מדף

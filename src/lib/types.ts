@@ -1,4 +1,6 @@
 export type Season = 'winter' | 'summer' | 'mid' | 'all';
+/** גזרה ביחס למידה שעל התווית: -1 קטנה, 0 במידה, 1 גדולה */
+export type SizeFit = -1 | 0 | 1;
 export type ItemStatus = 'active' | 'waiting' | 'to_buy' | 'outgrown' | 'given';
 
 export interface Child {
@@ -27,6 +29,7 @@ export interface Item {
   category_id: string | null;
   type_id: string | null;
   size_label: string | null;
+  size_fit: SizeFit | null;
   season: Season;
   store: string | null;
   location: string | null;
@@ -46,6 +49,7 @@ export interface ItemInput {
   category_id: string | null;
   type_id: string | null;
   size_label: string | null;
+  size_fit: SizeFit | null;
   season: Season;
   store: string | null;
   location: string | null;

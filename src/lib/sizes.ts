@@ -43,10 +43,20 @@ export function ageMonths(birthDate: string | null): number | null {
   return months >= 0 ? months : null;
 }
 
+/**
+ * הגזרה מזיזה את הגיל האפקטיבי של המידה: גזרה קטנה = הבגד "נגמר" מוקדם יותר, גזרה גדולה = מאוחר יותר.
+ * צעד של כ-3 חודשים לתינוקות ופעוטות ו-6 חודשים לילדים גדולים יותר.
+ */
+export function fitShiftMonths(limit: number, fit: number | null): number {
+  if (!fit) return 0;
+  return fit * (limit <= 24 ? 3 : 6);
+}
+
 /** האם הפריט קטן / עומד להיות קטן על הילד (חלון של חודשיים קדימה) */
 export function outgrowStatus(item: Item, child: Child | undefined): 'past' | 'soon' | null {
   if (!child || item.status !== 'active') return null;
-  const limit = maxAgeMonths(item.size_label);
+  const baseLimit = maxAgeMonths(item.size_label);
+  const limit = baseLimit == null ? null : baseLimit + fitShiftMonths(baseLimit, item.size_fit);
   const age = ageMonths(child.birth_date);
   if (limit == null || age == null) return null;
   if (age > limit + 1) return 'past';

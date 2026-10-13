@@ -37,6 +37,13 @@ export const SIZE_SUGGESTIONS = [
   '10-11', '11-12', '12-13', '13-14', '14-16',
 ];
 
+/** גזרה ביחס למידה שעל התווית – הגזרות משתנות בין יצרנים */
+export const SIZE_FITS = {
+  '-1': { label: 'גזרה קטנה', short: 'קטן', hint: 'מרגיש כמו מידה אחת למטה' },
+  '0': { label: 'במידה', short: 'במידה', hint: 'מתאים למידה שעל התווית' },
+  '1': { label: 'גזרה גדולה', short: 'גדול', hint: 'מרגיש כמו מידה אחת למעלה' },
+} as const;
+
 export const DEFAULT_CATEGORIES = ['שבת וחג', 'חול (יום־יום)', 'פיג\'מות', 'בית', 'אירועים'];
 
 export const DEFAULT_ITEM_TYPES = [

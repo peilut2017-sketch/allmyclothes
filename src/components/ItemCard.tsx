@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { SEASONS } from '../lib/constants';
 import { useData } from '../context/DataContext';
 import { outgrowStatus } from '../lib/sizes';
+import { FitDots } from './FitDots';
 import type { Item } from '../lib/types';
 
 export function ItemCard({ item }: { item: Item }) {
@@ -64,8 +65,9 @@ export function ItemCard({ item }: { item: Item }) {
             {child ? `${child.emoji} ${child.name}` : type ? type.name : 'כללי'}
           </span>
           {item.size_label && (
-            <span className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
               {item.size_label}
+              <FitDots value={item.size_fit} />
             </span>
           )}
         </div>
