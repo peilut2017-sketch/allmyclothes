@@ -1,0 +1,662 @@
+{
+  "_readme": "מקום מרכזי אחד לכל מה שעורכים בסרטון: טקסטים, כתובת הרשמה, אורכי סצנות, תזמוני פעולות (beats, בשניות מתחילת הסצנה), אפקטים וקריינות. גם האנימציה וגם הפסקול (audio/build_audio.py) קוראים מכאן, כך שהם נשארים מסונכרנים.",
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "signupUrl": "",
+  "voiceover": {
+    "enabled": false,
+    "file": "audio/vo.wav",
+    "duckDb": -9
+  },
+  "scenes": [
+    {
+      "id": "problem",
+      "dur": 6,
+      "copy": {
+        "line1": "גם אתם כבר *לא זוכרים…*",
+        "line2": "איזה בגד יש *לכל ילד?*",
+        "tags": [
+          "מידה 4-5",
+          "חורף",
+          "12-18 ח'",
+          "קיץ",
+          "שבת וחג",
+          "מידה 2-3",
+          "פיג'מות",
+          "עונות מעבר",
+          "מידה 6-7",
+          "קטן?"
+        ]
+      },
+      "beats": {
+        "line1": 0.35,
+        "line2": 3.0,
+        "riser": 3.4
+      },
+      "spawns": [
+        0.0,
+        0.3,
+        0.6,
+        0.88,
+        1.12,
+        1.34,
+        1.54,
+        1.72,
+        1.88,
+        2.03,
+        2.17,
+        2.3,
+        2.42,
+        2.54,
+        2.65,
+        2.76,
+        2.86,
+        2.96,
+        3.06,
+        3.15,
+        3.24,
+        3.33
+      ],
+      "tagSpawns": [
+        1.0,
+        1.45,
+        1.85,
+        2.2,
+        2.5,
+        2.8,
+        3.1,
+        3.4,
+        3.7,
+        4.0
+      ],
+      "vo": {
+        "t": 0.6,
+        "dur": 2.6,
+        "text": "מרגישים שאיבדתם שליטה על בגדי הילדים?"
+      }
+    },
+    {
+      "id": "solution",
+      "dur": 6,
+      "copy": {
+        "intro": "זה הזמן להכיר את…",
+        "brand": "ארון המשפחה",
+        "sub": "כל הבגדים. במקום אחד."
+      },
+      "beats": {
+        "phoneIn": 0.3,
+        "suck": 0.5,
+        "intro": 0.9,
+        "logo": 2.5,
+        "sub": 3.1,
+        "toCloset": 5.1
+      },
+      "vo": {
+        "t": 1.1,
+        "dur": 4.0,
+        "text": "הכירו את ארון המשפחה. הדרך החכמה לנהל את בגדי הילדים."
+      }
+    },
+    {
+      "id": "closet",
+      "dur": 7,
+      "copy": {
+        "title": "יודעים *בדיוק* מה יש",
+        "sub": "לכל ילד. בכל מידה. בכל עונה."
+      },
+      "beats": {
+        "title": 0.15,
+        "sub": 0.6,
+        "scroll": 0.3,
+        "tapChild": 1.55,
+        "tapFilter": 2.3,
+        "sheet": 2.45,
+        "tapWinter": 3.0,
+        "tapSize": 3.5,
+        "tapShow": 4.0,
+        "tapCard": 4.85,
+        "detail": 5.0,
+        "gallery": 5.9
+      },
+      "vo": {
+        "t": 0.5,
+        "dur": 4.2,
+        "text": "כל הבגדים של כל הילדים, מסודרים לפי מידה, עונה וסוג."
+      }
+    },
+    {
+      "id": "growth",
+      "dur": 8,
+      "copy": {
+        "q": "קטן על *אחד?*",
+        "a": "מעבירים *לאח הבא!*",
+        "alert": "בקרוב קטן"
+      },
+      "beats": {
+        "move": 0.0,
+        "cards": 0.3,
+        "q": 0.3,
+        "alert": 1.0,
+        "tapRow": 1.65,
+        "detailPush": 1.8,
+        "tapTransfer": 2.35,
+        "modal": 2.5,
+        "tapChild": 3.25,
+        "fly": 3.4,
+        "a": 4.0,
+        "landed": 4.5,
+        "tapCond": 4.95,
+        "condition": 5.1,
+        "tapClose": 5.95,
+        "tapStatus": 6.3,
+        "waiting": 6.4
+      },
+      "vo": {
+        "t": 0.8,
+        "dur": 5.0,
+        "text": "הבגד עומד להיות קטן? האפליקציה עוזרת לזהות, לשמור ולהעביר לאח הבא."
+      }
+    },
+    {
+      "id": "season",
+      "dur": 7,
+      "copy": {
+        "title": "עונה *חדשה?*",
+        "sub": "עושים סדר בכמה צעדים"
+      },
+      "beats": {
+        "morph": 0.5,
+        "title": 0.35,
+        "sub": 0.85,
+        "screen": 0.5,
+        "tapKeep": 1.55,
+        "condSheet": 1.7,
+        "tapCond": 2.45,
+        "next1": 2.6,
+        "tapTransfer": 3.4,
+        "transferSheet": 3.55,
+        "tapChild": 4.2,
+        "condSheet2": 4.35,
+        "tapSkip": 4.85,
+        "next2": 5.0,
+        "tapOutgrown": 5.75,
+        "next3": 5.9
+      },
+      "vo": {
+        "t": 0.8,
+        "dur": 3.0,
+        "text": "גם החלפת העונה הופכת לתהליך פשוט ומסודר."
+      }
+    },
+    {
+      "id": "shopping",
+      "dur": 8,
+      "copy": {
+        "title": "קונים מה שבאמת *חסר*",
+        "sub": "רשימות קניות וחוסרים לעונה הקרובה",
+        "missing": "חסר"
+      },
+      "beats": {
+        "title": 0.2,
+        "sub": 0.7,
+        "side": 0.6,
+        "tapAdd": 1.8,
+        "inserted": 2.0,
+        "tapCheck1": 3.6,
+        "fly1": 3.85,
+        "home1": 4.55,
+        "tapCheck2": 5.4,
+        "fly2": 5.65,
+        "home2": 6.35
+      },
+      "vo": {
+        "t": 0.8,
+        "dur": 4.0,
+        "text": "לפני שיוצאים לקניות, יודעים מה כבר יש ומה באמת צריך."
+      }
+    },
+    {
+      "id": "shared",
+      "dur": 5,
+      "copy": {
+        "title": "ארון אחד. *שני הורים.*"
+      },
+      "beats": {
+        "phones": 0.0,
+        "title": 0.25,
+        "line": 0.6,
+        "tapAdd": 1.35,
+        "added": 1.6,
+        "pulse": 1.85,
+        "arrived": 2.8
+      },
+      "vo": {
+        "t": 0.5,
+        "dur": 3.0,
+        "text": "ושני ההורים יכולים לנהל יחד את אותו ארון."
+      }
+    },
+    {
+      "id": "cta",
+      "dur": 8,
+      "copy": {
+        "line1": "פחות *בלגן* בארון.",
+        "line2": "יותר *סדר* במשפחה.",
+        "brand": "ארון המשפחה",
+        "ask": "כבר נרשמתם?",
+        "button": "מצטרפים ומתחילים לעשות סדר",
+        "tagline": "כל הבגדים. כל הילדים. ארון אחד."
+      },
+      "beats": {
+        "line1": 0.3,
+        "line2": 1.85,
+        "morph": 3.3,
+        "brand": 4.0,
+        "ask": 4.5,
+        "button": 4.9,
+        "shine": 5.5,
+        "tagline": 5.8
+      },
+      "vo": {
+        "t": 3.9,
+        "dur": 3.4,
+        "text": "ארון המשפחה. מצטרפים היום, ומתחילים לעשות סדר."
+      }
+    }
+  ],
+  "sfx": [
+    {
+      "scene": "problem",
+      "spawnPops": true
+    },
+    {
+      "scene": "problem",
+      "t": 0.15,
+      "type": "rustle",
+      "gain": 0.5
+    },
+    {
+      "scene": "problem",
+      "t": 1.9,
+      "type": "rustle",
+      "gain": 0.6
+    },
+    {
+      "scene": "problem",
+      "beat": "riser",
+      "type": "riser",
+      "len": 2.6,
+      "gain": 0.55
+    },
+    {
+      "scene": "solution",
+      "t": 0.0,
+      "type": "whooshDeep",
+      "gain": 0.8
+    },
+    {
+      "scene": "solution",
+      "beat": "suck",
+      "type": "whoosh",
+      "gain": 0.55
+    },
+    {
+      "scene": "solution",
+      "beat": "logo",
+      "type": "chime",
+      "gain": 0.7
+    },
+    {
+      "scene": "solution",
+      "beat": "toCloset",
+      "type": "whoosh",
+      "gain": 0.4
+    },
+    {
+      "scene": "closet",
+      "beat": "scroll",
+      "type": "swipe",
+      "gain": 0.35
+    },
+    {
+      "scene": "closet",
+      "beat": "tapChild",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "tapFilter",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "sheet",
+      "type": "swipe",
+      "gain": 0.35
+    },
+    {
+      "scene": "closet",
+      "beat": "tapWinter",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "tapSize",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "tapShow",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "tapCard",
+      "type": "tap"
+    },
+    {
+      "scene": "closet",
+      "beat": "detail",
+      "type": "whoosh",
+      "gain": 0.3
+    },
+    {
+      "scene": "closet",
+      "beat": "gallery",
+      "type": "swipe",
+      "gain": 0.3
+    },
+    {
+      "scene": "growth",
+      "beat": "move",
+      "type": "whoosh",
+      "gain": 0.4
+    },
+    {
+      "scene": "growth",
+      "beat": "cards",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "growth",
+      "t": 0.45,
+      "type": "pop",
+      "gain": 0.4
+    },
+    {
+      "scene": "growth",
+      "beat": "alert",
+      "type": "notify",
+      "gain": 0.6
+    },
+    {
+      "scene": "growth",
+      "beat": "tapRow",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "detailPush",
+      "type": "whoosh",
+      "gain": 0.25
+    },
+    {
+      "scene": "growth",
+      "beat": "tapTransfer",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "modal",
+      "type": "swipe",
+      "gain": 0.3
+    },
+    {
+      "scene": "growth",
+      "beat": "tapChild",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "fly",
+      "type": "cardSwipe",
+      "gain": 0.6
+    },
+    {
+      "scene": "growth",
+      "beat": "landed",
+      "type": "success",
+      "gain": 0.6
+    },
+    {
+      "scene": "growth",
+      "beat": "tapCond",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "condition",
+      "type": "ticks",
+      "len": 0.7,
+      "gain": 0.35
+    },
+    {
+      "scene": "growth",
+      "beat": "tapClose",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "tapStatus",
+      "type": "tap"
+    },
+    {
+      "scene": "growth",
+      "beat": "waiting",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "season",
+      "beat": "morph",
+      "type": "shimmer",
+      "gain": 0.5
+    },
+    {
+      "scene": "season",
+      "beat": "tapKeep",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "condSheet",
+      "type": "swipe",
+      "gain": 0.3
+    },
+    {
+      "scene": "season",
+      "beat": "tapCond",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "next1",
+      "type": "cardSwipe",
+      "gain": 0.5
+    },
+    {
+      "scene": "season",
+      "beat": "tapTransfer",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "transferSheet",
+      "type": "swipe",
+      "gain": 0.3
+    },
+    {
+      "scene": "season",
+      "beat": "tapChild",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "tapSkip",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "next2",
+      "type": "cardSwipe",
+      "gain": 0.5
+    },
+    {
+      "scene": "season",
+      "beat": "tapOutgrown",
+      "type": "tap"
+    },
+    {
+      "scene": "season",
+      "beat": "next3",
+      "type": "cardSwipe",
+      "gain": 0.5
+    },
+    {
+      "scene": "shopping",
+      "beat": "side",
+      "type": "pop",
+      "gain": 0.4
+    },
+    {
+      "scene": "shopping",
+      "t": 0.75,
+      "type": "pop",
+      "gain": 0.35
+    },
+    {
+      "scene": "shopping",
+      "t": 0.9,
+      "type": "pop",
+      "gain": 0.3
+    },
+    {
+      "scene": "shopping",
+      "beat": "tapAdd",
+      "type": "tap"
+    },
+    {
+      "scene": "shopping",
+      "t": 1.85,
+      "type": "whoosh",
+      "gain": 0.3
+    },
+    {
+      "scene": "shopping",
+      "beat": "inserted",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "shopping",
+      "beat": "tapCheck1",
+      "type": "check",
+      "gain": 0.7
+    },
+    {
+      "scene": "shopping",
+      "beat": "fly1",
+      "type": "swipe",
+      "gain": 0.35
+    },
+    {
+      "scene": "shopping",
+      "beat": "home1",
+      "type": "pop",
+      "gain": 0.4
+    },
+    {
+      "scene": "shopping",
+      "beat": "tapCheck2",
+      "type": "check",
+      "gain": 0.6
+    },
+    {
+      "scene": "shopping",
+      "beat": "fly2",
+      "type": "swipe",
+      "gain": 0.3
+    },
+    {
+      "scene": "shopping",
+      "beat": "home2",
+      "type": "pop",
+      "gain": 0.4
+    },
+    {
+      "scene": "shared",
+      "beat": "phones",
+      "type": "whoosh",
+      "gain": 0.45
+    },
+    {
+      "scene": "shared",
+      "beat": "tapAdd",
+      "type": "tap"
+    },
+    {
+      "scene": "shared",
+      "beat": "added",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "shared",
+      "beat": "pulse",
+      "type": "sync",
+      "gain": 0.55
+    },
+    {
+      "scene": "shared",
+      "beat": "arrived",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "cta",
+      "t": 0.0,
+      "type": "whoosh",
+      "gain": 0.35
+    },
+    {
+      "scene": "cta",
+      "beat": "morph",
+      "type": "whooshDeep",
+      "gain": 0.6
+    },
+    {
+      "scene": "cta",
+      "beat": "brand",
+      "type": "sonicLogo",
+      "gain": 0.8
+    },
+    {
+      "scene": "cta",
+      "beat": "button",
+      "type": "pop",
+      "gain": 0.45
+    },
+    {
+      "scene": "cta",
+      "beat": "shine",
+      "type": "shimmer",
+      "gain": 0.3
+    }
+  ],
+  "music": {
+    "bpm": 120,
+    "gain": 0.55
+  }
+}
