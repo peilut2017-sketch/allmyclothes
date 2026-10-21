@@ -1,0 +1,4 @@
+node_modules
+out/*.raw.mp4
+# נבנים מחדש ע"י npm run audio / npm run render
+public/audio/*.wav
