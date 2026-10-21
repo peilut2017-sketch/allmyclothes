@@ -8,6 +8,8 @@ import { conditionLabel, SIZE_FITS, STATUSES, STATUS_ORDER } from '../lib/consta
 import { formatDate, formatPrice } from '../lib/format';
 import { looksOfItem } from '../lib/looks';
 import { withViewTransition } from '../lib/motion';
+import { AnimatePresence } from 'motion/react';
+import { ImageViewer } from '../components/ImageViewer';
 
 export function ItemDetailPage() {
   const { id } = useParams();
@@ -18,6 +20,7 @@ export function ItemDetailPage() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [conditionOpen, setConditionOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const item = items.find((i) => i.id === id);
   if (!item) {
@@ -54,9 +57,14 @@ export function ItemDetailPage() {
     <div className="min-h-dvh bg-cream pb-28">
       <div className="relative" style={{ viewTransitionName: 'item-image' }}>
         {galleryUrls.length > 1 ? (
-          <Gallery urls={galleryUrls} alt={item.name} index={galleryIndex} onIndexChange={setGalleryIndex} />
+          <Gallery urls={galleryUrls} alt={item.name} index={galleryIndex} onIndexChange={setGalleryIndex} onOpen={() => setViewerOpen(true)} />
         ) : galleryUrls.length === 1 ? (
-          <img src={galleryUrls[0]} alt={item.name} className="aspect-square w-full object-cover sm:mx-auto sm:max-w-lg sm:rounded-b-3xl" />
+          <img
+            src={galleryUrls[0]}
+            alt={item.name}
+            onClick={() => setViewerOpen(true)}
+            className="aspect-square w-full cursor-zoom-in object-cover sm:mx-auto sm:max-w-lg sm:rounded-b-3xl"
+          />
         ) : (
           <div className="flex aspect-square w-full items-center justify-center bg-amber-50 dark:bg-amber-500/15 text-8xl sm:mx-auto sm:max-w-lg">👕</div>
         )}
@@ -158,6 +166,12 @@ export function ItemDetailPage() {
         </button>
       </main>
 
+      <AnimatePresence>
+        {viewerOpen && (
+          <ImageViewer urls={galleryUrls} startIndex={galleryIndex} alt={item.name} onClose={() => setViewerOpen(false)} />
+        )}
+      </AnimatePresence>
+
       <Modal open={conditionOpen} onClose={() => setConditionOpen(false)} title="מה מצב הבגד? 🧵">
         <ConditionPicker
           value={item.condition}
@@ -243,11 +257,12 @@ export function ItemDetailPage() {
   );
 }
 
-function Gallery({ urls, alt, index, onIndexChange }: {
+function Gallery({ urls, alt, index, onIndexChange, onOpen }: {
   urls: string[];
   alt: string;
   index: number;
   onIndexChange: (i: number) => void;
+  onOpen: () => void;
 }) {
   return (
     <div className="sm:mx-auto sm:max-w-lg">
@@ -264,7 +279,8 @@ function Gallery({ urls, alt, index, onIndexChange }: {
             key={url}
             src={url}
             alt={alt}
-            className="aspect-square w-full shrink-0 snap-center object-cover"
+            onClick={onOpen}
+            className="aspect-square w-full shrink-0 cursor-zoom-in snap-center object-cover"
           />
         ))}
       </div>

@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
 import { useData } from '../context/DataContext';
-import { ConfirmDialog, Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/Modal';
+import { LookViewer } from '../components/LookViewer';
 import { EmptyState } from '../components/EmptyState';
 import { LookCollage } from '../components/LookCollage';
 import type { Item, Look } from '../lib/types';
 
 export function LooksPage() {
-  const { looks, items, children, imageUrls, deleteLook } = useData();
+  const { looks, items, children, deleteLook } = useData();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const [openId, setOpenId] = useState<string | null>(params.get('open'));
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
+  const openParam = params.get('open');
   const [deleting, setDeleting] = useState<Look | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,11 +27,13 @@ export function LooksPage() {
     [looks, items],
   );
 
+  // ‎/looks?open=<id> (מעמוד הפריט) פותח את הלוק ישר במסך מלא
   useEffect(() => {
-    if (params.get('open')) setParams({}, { replace: true });
-  }, [params, setParams]);
-
-  const opened = resolved.find((r) => r.look.id === openId);
+    if (!openParam) return;
+    const i = resolved.findIndex((r) => r.look.id === openParam);
+    if (i >= 0) setViewIndex(i);
+    setParams({}, { replace: true });
+  }, [openParam, resolved, setParams]);
 
   const childrenOf = (list: Item[]) => {
     const ids = [...new Set(list.map((i) => i.child_id).filter(Boolean))];
@@ -50,6 +55,7 @@ export function LooksPage() {
       </header>
 
       <main className="mx-auto max-w-lg px-4">
+        {error && <p className="mb-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">{error}</p>}
         {resolved.length === 0 ? (
           <EmptyState
             emoji="👗"
@@ -62,7 +68,7 @@ export function LooksPage() {
             {resolved.map(({ look, list }) => (
               <button
                 key={look.id}
-                onClick={() => setOpenId(look.id)}
+                onClick={() => setViewIndex(resolved.findIndex((r) => r.look.id === look.id))}
                 className="overflow-hidden rounded-2xl bg-card text-start shadow-card transition active:scale-[0.98]"
               >
                 <LookCollage items={list} />
@@ -81,51 +87,19 @@ export function LooksPage() {
         )}
       </main>
 
-      <Modal open={!!opened} onClose={() => setOpenId(null)} title={opened?.look.name || 'לוק'}>
-        {opened && (
-          <>
-            <div className="space-y-2">
-              {opened.list.map((item) => {
-                const url = item.images[0] ? imageUrls[item.images[0]] : null;
-                return (
-                  <Link
-                    key={item.id}
-                    to={`/item/${item.id}`}
-                    className="flex items-center gap-3 rounded-2xl bg-gray-50 p-2.5 active:scale-[0.98]"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-card text-xl">
-                      {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : '👕'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold text-ink">{item.name}</div>
-                      <div className="text-xs text-gray-500">{item.size_label ? `מידה ${item.size_label}` : ' '}</div>
-                    </div>
-                    <span className="text-gray-300">‹</span>
-                  </Link>
-                );
-              })}
-            </div>
-            {opened.list.length < opened.look.item_ids.length && (
-              <p className="mt-2 text-xs text-gray-400">חלק מהפריטים נמחקו מהארון ולכן לא מוצגים.</p>
-            )}
-            {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => navigate(`/looks/${opened.look.id}/edit`)}
-                className="flex-1 rounded-2xl bg-amber-500 py-3 font-semibold text-white active:scale-[0.98]"
-              >
-                ✏️ עריכה
-              </button>
-              <button
-                onClick={() => { setDeleting(opened.look); setOpenId(null); }}
-                className="flex-1 rounded-2xl bg-gray-100 py-3 font-semibold text-rose-600 active:scale-[0.98]"
-              >
-                🗑️ מחיקה
-              </button>
-            </div>
-          </>
+      <AnimatePresence>
+        {viewIndex !== null && resolved[viewIndex] && (
+          <LookViewer
+            looks={resolved}
+            index={viewIndex}
+            onIndexChange={setViewIndex}
+            onClose={() => setViewIndex(null)}
+            onOpenItem={(id) => navigate(`/item/${id}`)}
+            onEdit={(look) => navigate(`/looks/${look.id}/edit`)}
+            onDelete={setDeleting}
+          />
         )}
-      </Modal>
+      </AnimatePresence>
 
       <ConfirmDialog
         open={!!deleting}
@@ -133,8 +107,11 @@ export function LooksPage() {
         message="הלוק יימחק, הפריטים עצמם יישארו בארון."
         onConfirm={() => {
           if (!deleting) return;
-          deleteLook(deleting.id).catch(() => setError('המחיקה נכשלה'));
+          const removed = deleting;
+          deleteLook(removed.id).catch(() => setError('המחיקה נכשלה'));
           setDeleting(null);
+          // אחרי מחיקה: ממשיכים ללוק הקודם, או סוגרים אם זה היה האחרון
+          setViewIndex((i) => (resolved.length <= 1 || i === null ? null : Math.min(i, resolved.length - 2)));
         }}
         onCancel={() => setDeleting(null)}
       />

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useLayoutEffect, useRef } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { isConfigured } from './lib/supabase';
@@ -29,14 +29,31 @@ function SetupNotice() {
   );
 }
 
+/** מקום הגלילה האחרון, נשמר בזמן אמת כדי שנוכל לשמור אותו ברגע הניווט (אחרי שהעמוד כבר הוחלף) */
+const scrollPosRef = { y: 0 };
+if (typeof window !== 'undefined') {
+  window.addEventListener('scroll', () => { scrollPosRef.y = window.scrollY; }, { passive: true });
+}
+
 function Shell() {
   const { session, loading } = useAuth();
   const location = useLocation();
 
-  // כל עמוד חדש נפתח מלמעלה (אחרת ניווט מעמוד גלול נשאר באמצע העמוד הבא)
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
+  // ניהול גלילה: עמוד חדש נפתח תמיד מלמעלה (אחרת, למשל באנדרואיד, פתיחת פריט מרשימה גלולה
+  // נשארה באמצע עמוד הפריט ודילגה על התמונה). חזרה אחורה משחזרת את מקום הגלילה הקודם.
+  // layout effect – כדי שהגלילה תתבצע לפני הציור, גם בתוך מעבר תצוגה.
+  const navType = useNavigationType();
+  const scrollByKey = useRef(new Map<string, number>());
+  const prevKey = useRef(location.key);
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  }, []);
+  useLayoutEffect(() => {
+    scrollByKey.current.set(prevKey.current, scrollPosRef.y);
+    prevKey.current = location.key;
+    const saved = navType === 'POP' ? scrollByKey.current.get(location.key) : undefined;
+    window.scrollTo(0, saved ?? 0);
+  }, [location.key, navType]);
 
   if (loading) {
     return (
