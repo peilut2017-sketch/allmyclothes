@@ -78,7 +78,7 @@ export function ChildrenPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex max-w-lg items-center justify-between">
           <h1 className="text-2xl font-extrabold text-ink">הילדים שלנו 🧒</h1>
           <button

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -31,6 +32,11 @@ function SetupNotice() {
 function Shell() {
   const { session, loading } = useAuth();
   const location = useLocation();
+
+  // כל עמוד חדש נפתח מלמעלה (אחרת ניווט מעמוד גלול נשאר באמצע העמוד הבא)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   if (loading) {
     return (

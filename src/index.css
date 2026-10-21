@@ -31,14 +31,74 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    /* מעבר רך בין מצב בהיר לכהה – בלי קפיצת בהירות */
+    transition: background-color 300ms ease;
   }
   body {
     @apply bg-cream font-sans text-ink antialiased;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+
+  /* טיפוגרפיה: ריווח אותיות וגובה שורה משתנים לפי הגודל – כותרות גדולות הדוקות יותר, טקסט קטן מעט רחב יותר */
+  h1 { letter-spacing: -0.022em; line-height: 1.15; }
+  h2 { letter-spacing: -0.015em; line-height: 1.2; }
+  h3 { letter-spacing: -0.01em; line-height: 1.25; }
+  .text-xs, .text-\[0\.6875rem\], .text-\[0\.625rem\] { letter-spacing: 0.01em; }
+
+  /* משוב מיידי בהנחת האצבע: המעבר בלחיצה קצר מאוד, והחזרה רכה */
+  button, a, [role='button'] { touch-action: manipulation; }
+  button:active, a:active { transition-duration: 80ms; }
+
+  /* מעבר תצוגה (View Transitions) בין כרטיס לעמוד הפריט – מעוגן לתמונה בלבד */
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
+  ::view-transition-group(item-image) {
+    animation-duration: 420ms;
+    animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 }
 
 @layer components {
+  /* חומרים: שכבה שקופה-מטושטשת צפה מעל התוכן, עם קצה עליון מוארך כמו אור שנופל על זכוכית */
+  .glass {
+    background: rgb(var(--c-card) / 0.72);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid rgb(255 255 255 / 0.45);
+  }
+  .glass-bar {
+    background: rgb(var(--c-cream) / 0.78);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  .dark .glass { border-top-color: rgb(255 255 255 / 0.08); }
+
   .input {
     @apply w-full rounded-2xl border border-gray-200 bg-card px-4 py-3 text-ink outline-none transition focus:border-amber-400;
   }
+}
+
+/* ---------- נגישות: שלושה אותות עצמאיים ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-bar {
+    background: rgb(var(--c-card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-bar { background: rgb(var(--c-cream)); }
+}
+@media (prefers-contrast: more) {
+  .glass, .glass-bar { background: rgb(var(--c-card)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .glass-bar { background: rgb(var(--c-cream)); }
+  .glass { border-top: 2px solid rgb(var(--c-g400)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 0.01ms !important; }
 }

@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SEASONS } from '../lib/constants';
 import { useData } from '../context/DataContext';
 import { outgrowStatus } from '../lib/sizes';
 import { FitDots } from './FitDots';
+import { isTransitionItem, markTransitionItem, withViewTransition } from '../lib/motion';
 import type { Item } from '../lib/types';
 
 export function ItemCard({ item }: { item: Item }) {
+  const navigate = useNavigate();
   const { children, itemTypes, imageUrls } = useData();
   const child = children.find((c) => c.id === item.child_id);
   const type = itemTypes.find((t) => t.id === item.type_id);
@@ -17,9 +19,19 @@ export function ItemCard({ item }: { item: Item }) {
   return (
     <Link
       to={`/item/${item.id}`}
+      onClick={(e) => {
+        // פתיחה "מתוך" הכרטיס: מעבר תצוגה משותף לתמונה (בדפדפנים שתומכים), אחרת ניווט רגיל
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        markTransitionItem(item.id);
+        withViewTransition(() => navigate(`/item/${item.id}`));
+      }}
       className={`block overflow-hidden rounded-2xl bg-card shadow-card transition active:scale-[0.98] ${faded ? 'opacity-60' : ''}`}
     >
-      <div className="relative aspect-square bg-gray-50">
+      <div
+        className="relative aspect-square bg-gray-50"
+        style={isTransitionItem(item.id) ? { viewTransitionName: 'item-image' } : undefined}
+      >
         {imageUrl ? (
           <img src={imageUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
         ) : (

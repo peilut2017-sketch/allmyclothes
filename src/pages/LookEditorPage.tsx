@@ -82,7 +82,7 @@ export function LookEditorPage() {
           {reasons.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {reasons.slice(0, 3).map((r) => (
-                <span key={r} className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                <span key={r} className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[0.625rem] font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
                   {r}
                 </span>
               ))}
@@ -102,7 +102,7 @@ export function LookEditorPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-32">
-      <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
           <h1 className="text-xl font-extrabold text-ink">{editing ? 'עריכת לוק' : 'לוק חדש'} 👗</h1>
@@ -135,7 +135,7 @@ export function LookEditorPage() {
                     <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-gray-50 text-2xl shadow-card">
                       {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : '👕'}
                     </div>
-                    <div className="mt-1 truncate text-center text-[11px] font-semibold text-gray-600">{item.name}</div>
+                    <div className="mt-1 truncate text-center text-[0.6875rem] font-semibold text-gray-600">{item.name}</div>
                     <button
                       type="button"
                       onClick={() => toggle(item.id)}

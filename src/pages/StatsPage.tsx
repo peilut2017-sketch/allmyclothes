@@ -93,7 +93,7 @@ export function StatsPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
         <h1 className="mx-auto max-w-lg text-2xl font-extrabold text-ink">סיכום הארון 📊</h1>
       </header>
 
@@ -137,7 +137,7 @@ function StatTile({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-2xl bg-card p-3 text-center shadow-card">
       <div className="text-xl font-extrabold text-ink">{value}</div>
-      <div className="mt-0.5 text-[11px] font-medium text-gray-500">{label}</div>
+      <div className="mt-0.5 text-[0.6875rem] font-medium text-gray-500">{label}</div>
     </div>
   );
 }

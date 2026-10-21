@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ItemCard } from '../components/ItemCard';
+import { SlidersIcon } from '../components/Icons';
 import { EmptyState } from '../components/EmptyState';
 import { FilterSheet, EMPTY_FILTERS, countActiveFilters, type Filters } from '../components/FilterSheet';
 import { compareSizes } from '../lib/sizes';
@@ -88,7 +89,7 @@ export function ClosetPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
         <div className="mx-auto max-w-lg">
           <div className="mb-3 flex items-center justify-between">
             <h1 className="text-2xl font-extrabold text-ink">הארון שלנו 👕</h1>
@@ -97,8 +98,8 @@ export function ClosetPage() {
                 {filtered.length} פריטים
                 {totalValue > 0 && ` · ${formatPrice(totalValue)}`}
               </span>
-              <Link to="/settings" aria-label="הגדרות" className="text-lg text-gray-400">
-                ⚙️
+              <Link to="/settings" aria-label="הגדרות" className="text-gray-400 transition active:scale-90">
+                <SlidersIcon />
               </Link>
             </div>
           </div>
@@ -121,7 +122,7 @@ export function ClosetPage() {
             >
               סינון
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -end-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                <span className="absolute -top-1.5 -end-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[0.625rem] font-bold text-white">
                   {activeFilterCount}
                 </span>
               )}

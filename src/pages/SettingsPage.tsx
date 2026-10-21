@@ -86,7 +86,7 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 bg-cream/95 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
           <h1 className="text-2xl font-extrabold text-ink">הגדרות ⚙️</h1>

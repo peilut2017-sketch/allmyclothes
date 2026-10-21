@@ -7,6 +7,7 @@ import { ConditionPicker } from '../components/ConditionPicker';
 import { conditionLabel, SIZE_FITS, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatDate, formatPrice } from '../lib/format';
 import { looksOfItem } from '../lib/looks';
+import { withViewTransition } from '../lib/motion';
 
 export function ItemDetailPage() {
   const { id } = useParams();
@@ -51,7 +52,7 @@ export function ItemDetailPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <div className="relative">
+      <div className="relative" style={{ viewTransitionName: 'item-image' }}>
         {galleryUrls.length > 1 ? (
           <Gallery urls={galleryUrls} alt={item.name} index={galleryIndex} onIndexChange={setGalleryIndex} />
         ) : galleryUrls.length === 1 ? (
@@ -60,7 +61,7 @@ export function ItemDetailPage() {
           <div className="flex aspect-square w-full items-center justify-center bg-amber-50 dark:bg-amber-500/15 text-8xl sm:mx-auto sm:max-w-lg">👕</div>
         )}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => withViewTransition(() => navigate(-1))}
           aria-label="חזרה"
           className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/90 text-xl shadow"
         >
@@ -144,10 +145,17 @@ export function ItemDetailPage() {
           <ActionButton
             emoji="📄"
             label="שכפול (מידה נוספת)"
+            wide
             onClick={() => navigate('/add', { state: { duplicateOf: item.id } })}
           />
-          <ActionButton emoji="🗑️" label="מחיקה" danger onClick={() => setConfirmDelete(true)} />
         </div>
+        {/* פעולה הרסנית: מוצגת בשקט, בנפרד מהפעולות הנפוצות */}
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="mt-3 w-full py-3 text-sm font-semibold text-rose-600 transition active:opacity-60 dark:text-rose-300"
+        >
+          מחיקת הפריט
+        </button>
       </main>
 
       <Modal open={conditionOpen} onClose={() => setConditionOpen(false)} title="מה מצב הבגד? 🧵">
@@ -274,16 +282,17 @@ function Gallery({ urls, alt, index, onIndexChange }: {
   );
 }
 
-function ActionButton({ emoji, label, danger, onClick }: {
+function ActionButton({ emoji, label, danger, wide, onClick }: {
   emoji: string;
   label: string;
   danger?: boolean;
+  wide?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-bold shadow-card transition active:scale-[0.98] ${
+      className={`flex items-center justify-center gap-2 rounded-2xl bg-card py-3.5 text-sm font-bold shadow-card transition active:scale-[0.98] ${wide ? 'col-span-2' : ''} ${
         danger ? 'text-rose-600 dark:text-rose-300' : 'text-ink'
       }`}
     >

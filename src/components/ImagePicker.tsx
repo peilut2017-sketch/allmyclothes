@@ -104,7 +104,7 @@ export function ImagePicker({ images, onChange }: ImagePickerProps) {
                     )}
                   </button>
                   {idx === 0 && (
-                    <span className="absolute bottom-1 start-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    <span className="absolute bottom-1 start-1 rounded-full bg-amber-500 px-1.5 py-0.5 text-[0.625rem] font-bold text-white">
                       ראשית
                     </span>
                   )}

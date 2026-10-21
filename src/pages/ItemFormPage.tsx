@@ -120,7 +120,7 @@ export function ItemFormPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-32">
-      <header className="sticky top-0 z-30 flex items-center gap-3 bg-cream/95 px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-center gap-3 glass-bar px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
         <h1 className="text-xl font-extrabold text-ink">
           {editing ? 'עריכת פריט' : duplicateOf ? 'שכפול פריט' : fromShopping ? 'מה צריך לקנות?' : 'פריט חדש'}

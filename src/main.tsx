@@ -4,6 +4,9 @@ import App from './App';
 import { applyTheme, getTheme, watchSystemTheme } from './lib/theme';
 import './index.css';
 
+// מאפשר למצב :active להגיב מיד בהנחת האצבע גם ב-iOS Safari
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 applyTheme(getTheme());
 watchSystemTheme();
 
