@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
 import { FilterSheet, EMPTY_FILTERS, countActiveFilters, type Filters } from '../components/FilterSheet';
+import { compareSizes } from '../lib/sizes';
 import { formatPrice } from '../lib/format';
 
 type SortKey = 'newest' | 'name' | 'price' | 'size';
@@ -25,7 +26,7 @@ export function ClosetPage() {
   const [sort, setSort] = useState<SortKey>('newest');
 
   const availableSizes = useMemo(
-    () => [...new Set(items.map((i) => i.size_label).filter((s): s is string => Boolean(s)))].sort((a, b) => a.localeCompare(b, 'he', { numeric: true })),
+    () => [...new Set(items.map((i) => i.size_label).filter((s): s is string => Boolean(s)))].sort(compareSizes),
     [items],
   );
   const availableYears = useMemo(
@@ -63,7 +64,7 @@ export function ClosetPage() {
         result.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
         break;
       case 'size':
-        result.sort((a, b) => (a.size_label ?? '').localeCompare(b.size_label ?? '', 'he', { numeric: true }));
+        result.sort((a, b) => compareSizes(a.size_label ?? '', b.size_label ?? ''));
         break;
       default:
         break; // כבר ממוין מהחדש לישן

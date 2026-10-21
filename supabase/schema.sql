@@ -126,6 +126,17 @@ create table if not exists public.items (
   updated_at timestamptz not null default now()
 );
 
+-- ---------- לוקים (המלצות הלבשה: קבוצת פריטים שמתאימים זה לזה) ----------
+create table if not exists public.looks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  household_id uuid not null references public.households (id),
+  name text not null default '',
+  item_ids uuid[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+create index if not exists looks_household_idx on public.looks (household_id);
+
 create index if not exists items_household_idx on public.items (household_id);
 create index if not exists items_child_idx on public.items (child_id);
 create index if not exists children_household_idx on public.children (household_id);
@@ -153,6 +164,9 @@ create trigger categories_set_household before insert on public.categories
 drop trigger if exists item_types_set_household on public.item_types;
 create trigger item_types_set_household before insert on public.item_types
   for each row execute function public.set_household_id();
+drop trigger if exists looks_set_household on public.looks;
+create trigger looks_set_household before insert on public.looks
+  for each row execute function public.set_household_id();
 drop trigger if exists items_set_household on public.items;
 create trigger items_set_household before insert on public.items
   for each row execute function public.set_household_id();
@@ -166,6 +180,7 @@ alter table public.children   enable row level security;
 alter table public.categories enable row level security;
 alter table public.item_types enable row level security;
 alter table public.items      enable row level security;
+alter table public.looks      enable row level security;
 
 drop policy if exists "households_own" on public.households;
 drop policy if exists "profiles_own"   on public.profiles;
@@ -173,6 +188,7 @@ drop policy if exists "children_own"   on public.children;
 drop policy if exists "categories_own" on public.categories;
 drop policy if exists "item_types_own" on public.item_types;
 drop policy if exists "items_own"      on public.items;
+drop policy if exists "looks_own"      on public.looks;
 
 create policy "households_own" on public.households
   for select to authenticated using (id = public.my_household());
@@ -189,6 +205,10 @@ create policy "categories_own" on public.categories
   using (household_id = public.my_household()) with check (household_id = public.my_household());
 
 create policy "item_types_own" on public.item_types
+  for all to authenticated
+  using (household_id = public.my_household()) with check (household_id = public.my_household());
+
+create policy "looks_own" on public.looks
   for all to authenticated
   using (household_id = public.my_household()) with check (household_id = public.my_household());
 

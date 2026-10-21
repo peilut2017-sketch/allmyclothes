@@ -6,11 +6,12 @@ import { ConfirmDialog, Modal } from '../components/Modal';
 import { ConditionPicker } from '../components/ConditionPicker';
 import { conditionLabel, SIZE_FITS, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatDate, formatPrice } from '../lib/format';
+import { looksOfItem } from '../lib/looks';
 
 export function ItemDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, children, categories, itemTypes, imageUrls, updateItem, deleteItem } = useData();
+  const { items, looks, children, categories, itemTypes, imageUrls, updateItem, deleteItem } = useData();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -27,6 +28,7 @@ export function ItemDetailPage() {
     );
   }
 
+  const itemLooks = looksOfItem(looks, item.id);
   const child = children.find((c) => c.id === item.child_id);
   const category = categories.find((c) => c.id === item.category_id);
   const type = itemTypes.find((t) => t.id === item.type_id);
@@ -108,6 +110,33 @@ export function ItemDetailPage() {
             ✓ קניתי! העברה לארון
           </button>
         )}
+
+        <section className="mt-5 rounded-2xl bg-card p-4 shadow-card">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-gray-600">👗 לוקים עם הפריט</h2>
+            <button
+              onClick={() => navigate('/looks/new', { state: { anchor: item.id } })}
+              className="text-sm font-semibold text-amber-600"
+            >
+              + בניית לוק
+            </button>
+          </div>
+          {itemLooks.length === 0 ? (
+            <p className="text-sm text-gray-400">עוד לא שייכתם את הפריט ללוק. בחרו פריטים שמתאימים לו ושמרו המלצת הלבשה.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {itemLooks.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => navigate(`/looks?open=${l.id}`)}
+                  className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-800 active:scale-95 dark:bg-amber-500/15 dark:text-amber-200"
+                >
+                  {l.name || 'לוק'} · {l.item_ids.length}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <ActionButton emoji="🔁" label="שינוי סטטוס" onClick={() => setStatusOpen(true)} />

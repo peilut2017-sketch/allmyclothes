@@ -65,3 +65,11 @@ export interface HouseholdMember {
   id: string;
   email: string | null;
 }
+
+/** לוק = המלצת הלבשה: קבוצת פריטים שמתאימים זה לזה */
+export interface Look {
+  id: string;
+  name: string;
+  item_ids: string[];
+  created_at: string;
+}

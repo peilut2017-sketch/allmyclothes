@@ -10,7 +10,7 @@ import {
 import { supabase, STORAGE_BUCKET } from '../lib/supabase';
 import { DEFAULT_CATEGORIES, DEFAULT_ITEM_TYPES } from '../lib/constants';
 import { compressImage } from '../lib/image';
-import type { Category, Child, HouseholdMember, Item, ItemInput, ItemType } from '../lib/types';
+import type { Category, Child, HouseholdMember, Item, ItemInput, ItemType, Look } from '../lib/types';
 import { useAuth } from './AuthContext';
 
 interface DataContextValue {
@@ -20,6 +20,7 @@ interface DataContextValue {
   categories: Category[];
   itemTypes: ItemType[];
   items: Item[];
+  looks: Look[];
   imageUrls: Record<string, string>;
   inviteCode: string | null;
   members: HouseholdMember[];
@@ -38,6 +39,9 @@ interface DataContextValue {
   addItem: (input: ItemInput) => Promise<Item | null>;
   updateItem: (id: string, input: Partial<ItemInput>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  addLook: (name: string, itemIds: string[]) => Promise<Look | null>;
+  updateLook: (id: string, patch: Partial<Pick<Look, 'name' | 'item_ids'>>) => Promise<void>;
+  deleteLook: (id: string) => Promise<void>;
   uploadImage: (file: File) => Promise<string | null>;
 }
 
@@ -53,6 +57,7 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [looks, setLooks] = useState<Look[]>([]);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [householdId, setHouseholdId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -102,14 +107,17 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       return;
     }
     setHouseholdId(hid as string);
-    const [childRes, catRes, typeRes, itemRes, houseRes, memberRes] = await Promise.all([
+    const [childRes, catRes, typeRes, itemRes, houseRes, memberRes, lookRes] = await Promise.all([
       supabase.from('children').select('*').order('birth_date', { ascending: true }),
       supabase.from('categories').select('*').order('created_at', { ascending: true }),
       supabase.from('item_types').select('*').order('name', { ascending: true }),
       supabase.from('items').select('*').order('created_at', { ascending: false }),
       supabase.from('households').select('invite_code').single(),
       supabase.from('profiles').select('id, email').eq('household_id', hid as string),
+      supabase.from('looks').select('*').order('created_at', { ascending: false }),
     ]);
+    // טבלת הלוקים נוספה במיגרציה מאוחרת – אם עדיין לא הורצה, האפליקציה ממשיכה לעבוד בלעדיה
+    setLooks(((lookRes.data ?? []) as Look[]).map((l) => ({ ...l, item_ids: l.item_ids ?? [] })));
     setInviteCode(houseRes.data?.invite_code ?? null);
     setMembers((memberRes.data ?? []) as HouseholdMember[]);
     const firstError = childRes.error ?? catRes.error ?? typeRes.error ?? itemRes.error;
@@ -302,6 +310,34 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
     [items],
   );
 
+  const addLook = useCallback(
+    async (name: string, itemIds: string[]) => {
+      if (!userId) return null;
+      const { data, error: err } = await supabase
+        .from('looks')
+        .insert({ name: name.trim(), item_ids: itemIds, user_id: userId })
+        .select()
+        .single();
+      if (err) throw new Error(err.message);
+      const created = data as Look;
+      setLooks((prev) => [created, ...prev]);
+      return created;
+    },
+    [userId],
+  );
+
+  const updateLook = useCallback(async (id: string, patch: Partial<Pick<Look, 'name' | 'item_ids'>>) => {
+    const { error: err } = await supabase.from('looks').update(patch).eq('id', id);
+    if (err) throw new Error(err.message);
+    setLooks((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  }, []);
+
+  const deleteLook = useCallback(async (id: string) => {
+    const { error: err } = await supabase.from('looks').delete().eq('id', id);
+    if (err) throw new Error(err.message);
+    setLooks((prev) => prev.filter((l) => l.id !== id));
+  }, []);
+
   const uploadImage = useCallback(
     async (file: File) => {
       if (!userId) return null;
@@ -325,6 +361,7 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       categories,
       itemTypes,
       items,
+      looks,
       imageUrls,
       inviteCode,
       members,
@@ -343,13 +380,16 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
       addItem,
       updateItem,
       deleteItem,
+      addLook,
+      updateLook,
+      deleteLook,
       uploadImage,
     }),
     [
-      loading, error, childList, categories, itemTypes, items, imageUrls, reload,
+      loading, error, childList, categories, itemTypes, items, looks, imageUrls, reload,
       inviteCode, members, joinHousehold, leaveHousehold,
       addChild, updateChild, deleteChild, addCategory, renameCategory, deleteCategory,
-      addItemType, renameItemType, deleteItemType, addItem, updateItem, deleteItem, uploadImage,
+      addItemType, renameItemType, deleteItemType, addItem, updateItem, deleteItem, addLook, updateLook, deleteLook, uploadImage,
     ],
   );
 

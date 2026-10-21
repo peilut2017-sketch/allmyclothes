@@ -12,9 +12,23 @@ const EU_SIZE_TO_MONTHS: [number, number][] = [
   [128, 96], [134, 108], [140, 120], [146, 132], [152, 144], [158, 156], [164, 168],
 ];
 
+/** NB / ניו בורן / newborn */
+export function isNewborn(label: string): boolean {
+  return /^(nb|new\s*-?\s*born|ניו\s*-?\s*בורן)$/i.test(label.trim());
+}
+
+/** השוואת מידות לצורך מיון: ניו בורן ראשון, אחר כך לפי טקסט/מספר */
+export function compareSizes(a: string, b: string): number {
+  const na = isNewborn(a), nb = isNewborn(b);
+  if (na || nb) return na === nb ? 0 : na ? -1 : 1;
+  return a.localeCompare(b, 'he', { numeric: true });
+}
+
 export function maxAgeMonths(sizeLabel: string | null): number | null {
   if (!sizeLabel) return null;
   const label = sizeLabel.trim();
+  // ניו בורן: מתאים עד גיל חודש בערך
+  if (isNewborn(label)) return 1;
   const numbers = label.match(/\d+/g)?.map(Number);
   if (!numbers || numbers.length === 0) return null;
   const max = Math.max(...numbers);
@@ -50,6 +64,12 @@ export function ageMonths(birthDate: string | null): number | null {
 export function fitShiftMonths(limit: number, fit: number | null): number {
   if (!fit) return 0;
   return fit * (limit <= 24 ? 3 : 6);
+}
+
+/** גיל מקסימלי בחודשים של פריט, כולל תיקון לפי הגזרה */
+export function effectiveMaxAge(item: Item): number | null {
+  const base = maxAgeMonths(item.size_label);
+  return base == null ? null : base + fitShiftMonths(base, item.size_fit);
 }
 
 /** האם הפריט קטן / עומד להיות קטן על הילד (חלון של חודשיים קדימה) */

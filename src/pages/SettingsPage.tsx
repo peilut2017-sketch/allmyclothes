@@ -94,6 +94,13 @@ export function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">
+        <button
+          onClick={() => navigate('/stats')}
+          className="flex w-full items-center justify-between rounded-2xl bg-card p-4 text-start shadow-card active:scale-[0.99]"
+        >
+          <span className="font-bold text-ink">📊 סיכום והוצאות</span>
+          <span className="text-gray-300">‹</span>
+        </button>
         <section className="rounded-2xl bg-card p-4 shadow-card">
           <h2 className="mb-1 text-sm font-bold text-gray-600">מראה</h2>
           <p className="mb-3 text-xs text-gray-400">בהיר, כהה, או לפי הגדרת המכשיר</p>
