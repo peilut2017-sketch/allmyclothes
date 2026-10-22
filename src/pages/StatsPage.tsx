@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { SEASONS, SEASON_ORDER, STATUSES, STATUS_ORDER } from '../lib/constants';
 import { formatPrice } from '../lib/format';
@@ -93,9 +94,7 @@ export function StatsPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <h1 className="mx-auto max-w-lg text-2xl font-extrabold text-ink">סיכום הארון 📊</h1>
-      </header>
+      <PageHeader title="סיכום הארון" back />
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">
         <div className="grid grid-cols-2 gap-3">

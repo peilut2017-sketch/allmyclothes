@@ -14,6 +14,8 @@ function systemPrefersDark(): boolean {
 export function applyTheme(theme: Theme) {
   const dark = theme === 'dark' || (theme === 'system' && systemPrefersDark());
   document.documentElement.classList.toggle('dark', dark);
+  // צבע שורת הסטטוס של הדפדפן/האפליקציה המותקנת עוקב אחרי ערכת הנושא
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#000000' : '#f2f2f5');
 }
 
 export function setTheme(theme: Theme) {

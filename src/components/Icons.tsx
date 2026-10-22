@@ -37,3 +37,33 @@ export const SlidersIcon = ({ size }: { size?: number }) => (
 export const PlusIcon = ({ size }: { size?: number }) => (
   <Svg size={size}><path d="M12 5v14M5 12h14" /></Svg>
 );
+export const BackIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="m9 5 7 7-7 7" /></Svg>
+);
+export const CloseIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="M6 6l12 12M18 6 6 18" /></Svg>
+);
+export const CheckIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="m5 12.5 4.5 4.5L19 7" /></Svg>
+);
+export const ClockIcon = ({ size = 14 }: { size?: number }) => (
+  <Svg size={size}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Svg>
+);
+export const EditIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /></Svg>
+);
+export const GridIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><rect x="4" y="4" width="6.5" height="6.5" rx="1.6" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" /></Svg>
+);
+export const ListIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="M9 6h11M9 12h11M9 18h11" /><circle cx="4.5" cy="6" r=".6" /><circle cx="4.5" cy="12" r=".6" /><circle cx="4.5" cy="18" r=".6" /></Svg>
+);
+export const SearchIcon = ({ size = 18 }: { size?: number }) => (
+  <Svg size={size}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></Svg>
+);
+export const FilterIcon = ({ size }: { size?: number }) => (
+  <Svg size={size}><path d="M4 7h16M7 12h10M10 17h4" /></Svg>
+);
+export const ChevronIcon = ({ size = 18 }: { size?: number }) => (
+  <Svg size={size}><path d="m15 5-7 7 7 7" /></Svg>
+);

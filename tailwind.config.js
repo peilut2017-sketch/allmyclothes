@@ -12,6 +12,12 @@ export default {
         cream: 'rgb(var(--c-cream) / <alpha-value>)',
         card: 'rgb(var(--c-card) / <alpha-value>)',
         ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        // צבע המבטא (ענבר) מוגדר כמשתנה כדי שיהיה בהיר יותר במצב כהה
+        amber: {
+          400: 'rgb(var(--c-accent-lo) / <alpha-value>)',
+          500: 'rgb(var(--c-accent) / <alpha-value>)',
+          600: 'rgb(var(--c-accent-hi) / <alpha-value>)',
+        },
         gray: {
           50: 'rgb(var(--c-g50) / <alpha-value>)',
           100: 'rgb(var(--c-g100) / <alpha-value>)',
@@ -24,8 +30,16 @@ export default {
         },
       },
       boxShadow: {
-        card: '0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(0, 0, 0, 0.06)',
-        sheet: '0 -8px 30px rgba(0, 0, 0, 0.2)',
+        card: '0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.07)',
+        sheet: '0 -10px 40px rgba(0, 0, 0, 0.22)',
+      },
+      borderRadius: {
+        card: '22px',
+      },
+      transitionTimingFunction: {
+        // עקומות חזקות במקום ה-ease המובנה החלש
+        out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+        drawer: 'cubic-bezier(0.32, 0.72, 0, 1)',
       },
     },
   },

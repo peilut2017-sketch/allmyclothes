@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { ConditionPicker } from '../components/ConditionPicker';
 import { conditionLabel, SEASONS, SEASON_ORDER } from '../lib/constants';
@@ -219,12 +220,7 @@ export function SeasonSwapPage() {
   // ---------- מסך הגדרת המעבר ----------
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
-          <h1 className="text-2xl font-extrabold text-ink">החלפת עונה 🔄</h1>
-        </div>
-      </header>
+      <PageHeader title="החלפת עונה" back />
 
       <main className="mx-auto max-w-lg space-y-5 px-4 pt-1">
         <p className="text-sm text-gray-500">

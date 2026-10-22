@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigationType, type Location } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { ToastProvider } from './context/ToastContext';
 import { isConfigured } from './lib/supabase';
 import { BottomNav } from './components/BottomNav';
 import { LoginPage } from './pages/LoginPage';
@@ -51,6 +52,8 @@ function Shell() {
   useLayoutEffect(() => {
     scrollByKey.current.set(prevKey.current, scrollPosRef.y);
     prevKey.current = location.key;
+    // פתיחת פריט כשכבה מעל הרשימה: הרשימה נשארת במקומה ולכן לא נוגעים בגלילה
+    if ((location.state as { backgroundLocation?: unknown } | null)?.backgroundLocation) return;
     const saved = navType === 'POP' ? scrollByKey.current.get(location.key) : undefined;
     window.scrollTo(0, saved ?? 0);
   }, [location.key, navType]);
@@ -67,9 +70,12 @@ function Shell() {
 
   const hideNav = ['/add', '/edit', '/season-swap', '/looks/'].some((p) => location.pathname.startsWith(p));
 
+  const background = (location.state as { backgroundLocation?: Location } | null)?.backgroundLocation;
+
   return (
     <DataProvider>
-      <Routes>
+     <ToastProvider>
+      <Routes location={background ?? location}>
         <Route path="/" element={<ClosetPage />} />
         <Route path="/add" element={<ItemFormPage />} />
         <Route path="/edit/:id" element={<ItemFormPage />} />
@@ -84,7 +90,13 @@ function Shell() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {background && (
+        <Routes>
+          <Route path="/item/:id" element={<ItemDetailPage />} />
+        </Routes>
+      )}
       {!hideNav && <BottomNav />}
+     </ToastProvider>
     </DataProvider>
   );
 }

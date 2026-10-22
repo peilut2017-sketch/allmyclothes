@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog } from '../components/Modal';
 import { LookViewer } from '../components/LookViewer';
@@ -42,19 +43,20 @@ export function LooksPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto flex max-w-lg items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-ink">הלוקים שלנו 👗</h1>
+      <PageHeader
+        title="הלוקים שלנו"
+        subtitle="במה להלביש היום"
+        right={
           <button
             onClick={() => navigate('/looks/new')}
-            className="rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-amber-500/30 active:scale-95"
+            className="h-10 rounded-full bg-amber-500 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgb(var(--c-accent)/0.35)] transition-transform duration-150 ease-out active:scale-95"
           >
             + לוק חדש
           </button>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="mx-auto max-w-lg px-4">
+      <main className="mx-auto max-w-lg px-4 pt-4">
         {error && <p className="mb-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">{error}</p>}
         {resolved.length === 0 ? (
           <EmptyState
@@ -69,10 +71,11 @@ export function LooksPage() {
               <button
                 key={look.id}
                 onClick={() => setViewIndex(resolved.findIndex((r) => r.look.id === look.id))}
-                className="overflow-hidden rounded-2xl bg-card text-start shadow-card transition active:scale-[0.98]"
+                style={{ ['--i' as string]: resolved.findIndex((r) => r.look.id === look.id) }}
+                className="rise overflow-hidden rounded-card bg-card text-start shadow-card transition-transform duration-150 ease-out active:scale-[0.97]"
               >
                 <LookCollage items={list} />
-                <div className="p-2.5">
+                <div className="p-3">
                   <div className="truncate text-sm font-bold text-ink">{look.name || 'לוק'}</div>
                   <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
                     {childrenOf(list).map((c) => (

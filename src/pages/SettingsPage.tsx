@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog } from '../components/Modal';
 import { SEASONS, SIZE_FITS, STATUSES } from '../lib/constants';
@@ -86,12 +87,7 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
-          <h1 className="text-2xl font-extrabold text-ink">הגדרות ⚙️</h1>
-        </div>
-      </header>
+      <PageHeader title="הגדרות" back />
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-1">
         <button

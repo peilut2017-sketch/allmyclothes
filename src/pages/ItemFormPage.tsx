@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { ImagePicker } from '../components/ImagePicker';
 import { ConditionPicker } from '../components/ConditionPicker';
@@ -120,12 +121,7 @@ export function ItemFormPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-32">
-      <header className="sticky top-0 z-30 flex items-center gap-3 glass-bar px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
-        <h1 className="text-xl font-extrabold text-ink">
-          {editing ? 'עריכת פריט' : duplicateOf ? 'שכפול פריט' : fromShopping ? 'מה צריך לקנות?' : 'פריט חדש'}
-        </h1>
-      </header>
+      <PageHeader title={editing ? 'עריכת פריט' : duplicateOf ? 'שכפול פריט' : fromShopping ? 'מה צריך לקנות?' : 'פריט חדש'} back />
 
       <form onSubmit={(e) => void submit(e)} className="mx-auto max-w-lg space-y-5 px-4">
         <ImagePicker images={form.images} onChange={(imgs) => set('images', imgs)} />

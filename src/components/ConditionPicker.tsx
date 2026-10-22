@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { conditionLabel } from '../lib/constants';
 
 interface ConditionPickerProps {
@@ -6,41 +7,62 @@ interface ConditionPickerProps {
   allowClear?: boolean;
 }
 
-/** דירוג מצב הבגד: 1 (לזריקה) עד 10 (חדש) */
+const color = (n: number) => (n >= 8 ? 'rgb(var(--c-ok))' : n >= 5 ? 'rgb(var(--c-accent))' : 'rgb(var(--c-warn))');
+
+/** דירוג מצב הבגד 1–10: מחליקים עם האצבע על הפסים (או נוגעים בפס), והצבע משתנה לפי הציון */
 export function ConditionPicker({ value, onChange, allowClear = true }: ConditionPickerProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const active = useRef(false);
+
+  const setFromX = (clientX: number) => {
+    const r = ref.current!.getBoundingClientRect();
+    // הפסים LTR: 1 משמאל, 10 מימין
+    const n = Math.min(10, Math.max(1, Math.ceil(((clientX - r.left) / r.width) * 10)));
+    if (n !== value) onChange(n);
+  };
+
   return (
     <div>
-      <div className="flex gap-1" dir="ltr">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            aria-label={`מצב ${n} – ${conditionLabel(n)}`}
-            className={`h-9 flex-1 rounded-lg text-xs font-bold transition active:scale-90 ${
-              value !== null && n <= value
-                ? n >= 8
-                  ? 'bg-emerald-500 text-white'
-                  : n >= 5
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-rose-500 text-white'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-          >
-            {n === 10 ? '✨' : n}
-          </button>
-        ))}
+      <div className="mb-2 flex items-baseline justify-between">
+        <b className="text-2xl font-extrabold tabular-nums tracking-tight" style={{ color: value != null ? color(value) : undefined }}>
+          {value != null ? `${value}/10` : '—'}
+        </b>
+        <span className="text-sm text-gray-500">{value != null ? conditionLabel(value) : 'לא דורג עדיין'}</span>
       </div>
-      <div className="mt-1.5 flex items-center justify-between text-xs">
-        <span className="font-semibold text-gray-600">
-          {value !== null ? `${value}/10 · ${conditionLabel(value)}` : 'לא דורג עדיין'}
-        </span>
-        {allowClear && value !== null && (
-          <button type="button" onClick={() => onChange(null)} className="text-gray-400 underline">
-            ניקוי
-          </button>
-        )}
+      <div
+        ref={ref}
+        dir="ltr"
+        role="slider"
+        aria-label="מצב הבגד"
+        aria-valuemin={1}
+        aria-valuemax={10}
+        aria-valuenow={value ?? undefined}
+        className="flex h-10 cursor-pointer touch-pan-y gap-1"
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); active.current = true; setFromX(e.clientX); }}
+        onPointerMove={(e) => active.current && setFromX(e.clientX)}
+        onPointerUp={() => { active.current = false; }}
+        onPointerCancel={() => { active.current = false; }}
+      >
+        {Array.from({ length: 10 }, (_, i) => {
+          const on = value != null && i < value;
+          return (
+            <i
+              key={i}
+              className="flex-1 origin-bottom rounded-lg transition-[background-color,transform] duration-200 ease-out"
+              style={{
+                backgroundColor: on ? color(value!) : 'rgb(var(--c-g100))',
+                boxShadow: on ? 'none' : 'inset 0 0 0 0.5px rgb(var(--c-line) / 0.14)',
+                transform: i + 1 === value ? 'scaleY(1.12)' : undefined,
+              }}
+            />
+          );
+        })}
       </div>
+      {allowClear && value !== null && (
+        <button type="button" onClick={() => onChange(null)} className="mt-2 text-sm font-semibold text-gray-500 underline-offset-2 active:opacity-60">
+          ניקוי
+        </button>
+      )}
     </div>
   );
 }

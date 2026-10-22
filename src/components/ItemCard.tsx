@@ -1,83 +1,76 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { SEASONS } from '../lib/constants';
+import { Link, useLocation } from 'react-router-dom';
+import { useRef } from 'react';
 import { useData } from '../context/DataContext';
 import { outgrowStatus } from '../lib/sizes';
+import { setMorphSource } from '../lib/morph';
 import { FitDots } from './FitDots';
-import { isTransitionItem, markTransitionItem, withViewTransition } from '../lib/motion';
+import { ClockIcon } from './Icons';
 import type { Item } from '../lib/types';
 
-export function ItemCard({ item }: { item: Item }) {
-  const navigate = useNavigate();
-  const { children, itemTypes, imageUrls } = useData();
+/** פותח עמוד פריט כשכבה מעל הרשימה, ושומר את מיקום התמונה לצורך אנימציית הפתיחה */
+export function useOpenItem(item: Item) {
+  const location = useLocation();
+  const imgRef = useRef<HTMLDivElement>(null);
+  const onClick = () => {
+    const r = imgRef.current?.getBoundingClientRect();
+    if (r) setMorphSource({ id: item.id, x: r.left, y: r.top, w: r.width, h: r.height });
+  };
+  return { imgRef, onClick, to: `/item/${item.id}`, state: { backgroundLocation: location } };
+}
+
+export function ItemCard({ item, index = 0 }: { item: Item; index?: number }) {
+  const { children, imageUrls } = useData();
+  const open = useOpenItem(item);
   const child = children.find((c) => c.id === item.child_id);
-  const type = itemTypes.find((t) => t.id === item.type_id);
   const imageUrl = item.images[0] ? imageUrls[item.images[0]] : null;
-  const season = SEASONS[item.season];
   const faded = item.status === 'outgrown' || item.status === 'given';
   const outgrow = outgrowStatus(item, child);
 
   return (
     <Link
-      to={`/item/${item.id}`}
-      onClick={(e) => {
-        // פתיחה "מתוך" הכרטיס: מעבר תצוגה משותף לתמונה (בדפדפנים שתומכים), אחרת ניווט רגיל
-        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        markTransitionItem(item.id);
-        withViewTransition(() => navigate(`/item/${item.id}`));
-      }}
-      className={`block overflow-hidden rounded-2xl bg-card shadow-card transition active:scale-[0.98] ${faded ? 'opacity-60' : ''}`}
+      to={open.to}
+      state={open.state}
+      onClick={open.onClick}
+      style={{ ['--i' as string]: index }}
+      className={`rise group block rounded-card transition-transform duration-150 ease-out active:scale-[0.97] ${faded ? 'opacity-60' : ''}`}
     >
-      <div
-        className="relative aspect-square bg-gray-50"
-        style={isTransitionItem(item.id) ? { viewTransitionName: 'item-image' } : undefined}
-      >
+      <div ref={open.imgRef} className="relative aspect-square overflow-hidden rounded-card bg-gray-100 shadow-card">
         {imageUrl ? (
           <img src={imageUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl text-gray-200">
-            👕
-          </div>
+          <div className="flex h-full w-full items-center justify-center text-5xl text-gray-300">👕</div>
         )}
-        <span
-          className="absolute top-2 start-2 flex h-6 w-6 items-center justify-center rounded-full bg-card/90 text-sm shadow-sm"
-          title={season.label}
-        >
-          {season.emoji}
-        </span>
-        <div className="absolute top-2 end-2 flex flex-col items-end gap-1">
-          {item.quantity > 1 && (
-            <span className="rounded-full bg-black/60 px-2 py-0.5 text-xs font-bold text-white">
-              ×{item.quantity}
-            </span>
-          )}
-          {item.status === 'to_buy' && (
-            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">🛒 לקנות</span>
-          )}
-          {outgrow && (
-            <span
-              className="rounded-full bg-rose-500/90 px-2 py-0.5 text-xs font-bold text-white"
-              title={outgrow === 'past' ? 'כנראה כבר קטן' : 'בקרוב קטן'}
-            >
-              ⏰
-            </span>
-          )}
-        </div>
-        {child && (
-          <div
-            className="absolute bottom-0 inset-x-0 h-1.5"
-            style={{ backgroundColor: child.color }}
-          />
+        {item.quantity > 1 && (
+          <span className="absolute end-2.5 top-2.5 rounded-full bg-black/55 px-2 py-0.5 text-xs font-bold text-white backdrop-blur">
+            ×{item.quantity}
+          </span>
+        )}
+        {item.status === 'to_buy' && (
+          <span className="absolute start-2.5 top-2.5 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-bold text-white">לקנות</span>
+        )}
+        {outgrow && (
+          <span
+            className="absolute bottom-2.5 start-2.5 inline-flex items-center gap-1 rounded-full bg-[rgb(var(--c-warn))] py-0.5 pe-2.5 ps-2 text-[0.6875rem] font-bold text-white"
+            title={outgrow === 'past' ? 'כנראה כבר קטן' : 'בקרוב קטן'}
+          >
+            <ClockIcon size={12} />
+            {outgrow === 'past' ? 'קטן' : 'בקרוב קטן'}
+          </span>
         )}
       </div>
-      <div className="p-2.5">
-        <div className="truncate text-sm font-semibold text-ink">{item.name}</div>
-        <div className="mt-0.5 flex items-center justify-between gap-1 text-xs text-gray-500">
-          <span className="truncate">
-            {child ? `${child.emoji} ${child.name}` : type ? type.name : 'כללי'}
-          </span>
+      <div className="px-1 pt-2">
+        <div className="truncate text-[0.9375rem] font-bold tracking-[-0.01em] text-ink">{item.name}</div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[0.8125rem] text-gray-500">
+          {child ? (
+            <>
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: child.color }} />
+              <span className="truncate">{child.name}</span>
+            </>
+          ) : (
+            <span>כללי</span>
+          )}
           {item.size_label && (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
+            <span className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded-[7px] bg-gray-100 px-[7px] py-px text-xs font-bold tabular-nums text-ink">
               {item.size_label}
               <FitDots value={item.size_fit} />
             </span>

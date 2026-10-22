@@ -4,33 +4,48 @@
 
 @layer base {
   :root {
-    --c-cream: 250 247 242;
+    /* משטחים ניטרליים בהשראת Apple; הצבע היחיד הוא המבטא */
+    --c-cream: 242 242 245;
     --c-card: 255 255 255;
-    --c-ink: 45 42 38;
-    --c-g50: 249 250 251;
-    --c-g100: 243 244 246;
-    --c-g200: 229 231 235;
-    --c-g300: 209 213 219;
-    --c-g400: 156 163 175;
-    --c-g500: 107 114 128;
-    --c-g600: 75 85 99;
-    --c-g700: 55 65 81;
+    --c-ink: 28 28 30;
+    --c-g50: 247 247 249;
+    --c-g100: 242 242 245;
+    --c-g200: 229 229 234;
+    --c-g300: 209 209 214;
+    --c-g400: 142 142 147;
+    --c-g500: 108 108 114;
+    --c-g600: 72 72 74;
+    --c-g700: 58 58 60;
+    --c-accent: 239 138 0;
+    --c-accent-hi: 217 120 0;
+    --c-accent-lo: 255 166 43;
+    --c-line: 60 60 67;
+    --c-ok: 29 154 87;
+    --c-warn: 217 54 62;
   }
   .dark {
-    --c-cream: 23 21 19;
-    --c-card: 39 36 33;
-    --c-ink: 236 232 226;
-    --c-g50: 46 43 40;
-    --c-g100: 55 51 47;
-    --c-g200: 70 65 60;
-    --c-g300: 90 84 77;
-    --c-g400: 146 139 130;
-    --c-g500: 170 163 153;
-    --c-g600: 200 193 183;
-    --c-g700: 218 212 203;
+    --c-cream: 0 0 0;
+    --c-card: 28 28 30;
+    --c-ink: 245 245 247;
+    --c-g50: 36 36 38;
+    --c-g100: 44 44 46;
+    --c-g200: 58 58 60;
+    --c-g300: 84 84 88;
+    --c-g400: 142 142 147;
+    --c-g500: 174 174 178;
+    --c-g600: 199 199 204;
+    --c-g700: 229 229 234;
+    --c-accent: 255 163 26;
+    --c-accent-hi: 255 183 77;
+    --c-accent-lo: 255 190 92;
+    --c-line: 235 235 245;
+    --c-ok: 53 194 122;
+    --c-warn: 255 107 115;
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
     /* מעבר רך בין מצב בהיר לכהה – בלי קפיצת בהירות */
     transition: background-color 300ms ease;
   }
@@ -49,6 +64,10 @@
 
   /* משוב מיידי בהנחת האצבע: המעבר בלחיצה קצר מאוד, והחזרה רכה */
   button, a, [role='button'] { touch-action: manipulation; }
+  /* לחיצה ארוכה על כפתור לא אמורה לסמן טקסט; התוכן עצמו נשאר ניתן לסימון */
+  button, [role='button'] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  /* שדות קלט ב-16px לפחות, אחרת iOS מקרב את המסך בעת מיקוד */
+  input, textarea, select { font-size: 16px; }
   button:active, a:active { transition-duration: 80ms; }
 
   /* מעבר תצוגה (View Transitions) בין כרטיס לעמוד הפריט – מעוגן לתמונה בלבד */
@@ -60,12 +79,29 @@
 }
 
 @layer components {
+  /* כניסה מדורגת: כל פריט עולה בהפרש קצר אחרי הקודם (30–80ms); החזרה בלי אנימציה תחזור ל-none */
+  .rise { animation: rise 460ms cubic-bezier(0.23, 1, 0.32, 1) backwards; animation-delay: calc(min(var(--i, 0), 10) * 45ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(0.97); } }
+  .skeleton { background: linear-gradient(100deg, rgb(var(--c-g100)) 30%, rgb(var(--c-g50)) 50%, rgb(var(--c-g100)) 70%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
   /* חומרים: שכבה שקופה-מטושטשת צפה מעל התוכן, עם קצה עליון מוארך כמו אור שנופל על זכוכית */
   .glass {
     background: rgb(var(--c-card) / 0.72);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     backdrop-filter: blur(24px) saturate(180%);
     border-top: 1px solid rgb(255 255 255 / 0.45);
+  }
+  .glass-circle {
+    background: rgb(var(--c-card) / 0.72);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    box-shadow: 0 0 0 0.5px rgb(var(--c-line) / 0.16), 0 2px 8px rgb(0 0 0 / 0.06);
+  }
+  .glass-bar-edge {
+    background: rgb(var(--c-cream) / 0.78);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border-bottom: 0.5px solid rgb(var(--c-line) / 0.16);
   }
   .glass-bar {
     background: rgb(var(--c-cream) / 0.78);
@@ -75,12 +111,14 @@
   .dark .glass { border-top-color: rgb(255 255 255 / 0.08); }
 
   .input {
-    @apply w-full rounded-2xl border border-gray-200 bg-card px-4 py-3 text-ink outline-none transition focus:border-amber-400;
+    @apply w-full rounded-2xl border-0 bg-card px-4 py-3 text-base text-ink outline-none ring-1 ring-inset ring-gray-200 transition focus:ring-2 focus:ring-amber-500;
   }
 }
 
 /* ---------- נגישות: שלושה אותות עצמאיים ---------- */
 @media (prefers-reduced-transparency: reduce) {
+  .glass-circle { background: rgb(var(--c-card)); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .glass-bar-edge { background: rgb(var(--c-cream)); -webkit-backdrop-filter: none; backdrop-filter: none; }
   .glass, .glass-bar {
     background: rgb(var(--c-card));
     -webkit-backdrop-filter: none;

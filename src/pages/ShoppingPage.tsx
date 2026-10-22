@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { EmptyState } from '../components/EmptyState';
 import { SEASONS } from '../lib/constants';
@@ -102,35 +103,25 @@ export function ShoppingPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto max-w-lg">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-extrabold text-ink">לקנות 🛒</h1>
-            <div className="flex items-center gap-2">
-              {list.length > 0 && (
-                <button
-                  onClick={shareList}
-                  className="rounded-2xl bg-card px-3.5 py-2 text-sm font-bold text-ink shadow-card active:scale-95"
-                >
-                  📤 שיתוף
-                </button>
-              )}
-              <button
-                onClick={() => navigate('/add', { state: { shopping: true } })}
-                className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-amber-500/30 active:scale-95"
-              >
-                + הוספה
+      <PageHeader
+        title="לקנות"
+        subtitle={list.length > 0 ? `${list.length} פריטים${totalEstimate > 0 ? ` · סה״כ משוער: ${formatPrice(totalEstimate)}` : ''}` : 'מה חסר ומה צריך לקנות'}
+        right={
+          <>
+            {list.length > 0 && (
+              <button onClick={shareList} className="glass-circle h-10 rounded-full px-3.5 text-sm font-bold text-ink transition-transform duration-150 ease-out active:scale-95">
+                שיתוף
               </button>
-            </div>
-          </div>
-          {list.length > 0 && (
-            <p className="mt-1 text-sm text-gray-500">
-              {list.length} פריטים ברשימה
-              {totalEstimate > 0 && ` · סה״כ משוער: ${formatPrice(totalEstimate)}`}
-            </p>
-          )}
-        </div>
-      </header>
+            )}
+            <button
+              onClick={() => navigate('/add', { state: { shopping: true } })}
+              className="h-10 rounded-full bg-amber-500 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgb(var(--c-accent)/0.35)] transition-transform duration-150 ease-out active:scale-95"
+            >
+              + הוספה
+            </button>
+          </>
+        }
+      />
 
       <main className="mx-auto max-w-lg space-y-2.5 px-4 pt-1">
         {list.length === 0 ? (

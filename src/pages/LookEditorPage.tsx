@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { matchesQuery, suggestItems, type Suggestion } from '../lib/looks';
 
@@ -102,12 +103,7 @@ export function LookEditorPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-32">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto flex max-w-lg items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-2xl" aria-label="חזרה">→</button>
-          <h1 className="text-xl font-extrabold text-ink">{editing ? 'עריכת לוק' : 'לוק חדש'} 👗</h1>
-        </div>
-      </header>
+      <PageHeader title={editing ? 'עריכת לוק' : 'לוק חדש'} back />
 
       <main className="mx-auto max-w-lg space-y-4 px-4">
         <input
@@ -157,7 +153,7 @@ export function LookEditorPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="חיפוש פריט לפי שם, סוג או חנות..."
-            className="w-full rounded-2xl border border-gray-200 bg-card py-2.5 pe-4 ps-10 text-sm outline-none focus:border-amber-400"
+            className="w-full rounded-[14px] border-0 bg-gray-100 py-2.5 pe-4 ps-10 text-base text-ink outline-none focus:ring-2 focus:ring-amber-500"
           />
           <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
         </div>

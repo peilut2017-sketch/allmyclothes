@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { useData } from '../context/DataContext';
 import { ConfirmDialog, Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
@@ -78,17 +79,15 @@ export function ChildrenPage() {
 
   return (
     <div className="min-h-dvh bg-cream pb-28">
-      <header className="sticky top-0 z-30 glass-bar px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
-        <div className="mx-auto flex max-w-lg items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-ink">הילדים שלנו 🧒</h1>
-          <button
-            onClick={openAdd}
-            className="rounded-2xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-amber-500/30 active:scale-95"
-          >
+      <PageHeader
+        title="הילדים שלנו"
+        subtitle={`${children.length} ילדים`}
+        right={
+          <button onClick={openAdd} className="h-10 rounded-full bg-amber-500 px-4 text-sm font-bold text-white shadow-[0_6px_16px_rgb(var(--c-accent)/0.35)] transition-transform duration-150 ease-out active:scale-95">
             + הוספה
           </button>
-        </div>
-      </header>
+        }
+      />
 
       <main className="mx-auto max-w-lg space-y-3 px-4 pt-2">
         {outgrowAlerts.length > 0 && (
